@@ -23,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String searchQuery = '';
 
   final List<Map<String, dynamic>> sportFilters = [
-    {'id': 'all', 'label': 'Semua', 'emoji': '🏟️'},
+    {'id': 'all', 'label': 'Semua', 'emoji': '🏟'},
     {'id': 'futsal', 'label': 'Futsal', 'emoji': '⚽'},
     {'id': 'badminton', 'label': 'Badminton', 'emoji': '🏸'},
     {'id': 'tennis', 'label': 'Tenis', 'emoji': '🎾'},
@@ -376,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(32),
       child: Column(
         children: const [
-          Text('🏟️', style: TextStyle(fontSize: 48)),
+          Text('🏟', style: TextStyle(fontSize: 48)),
           SizedBox(height: 16),
           Text(
             'Tidak ada venue',
