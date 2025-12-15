@@ -18,6 +18,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   Map<String, dynamic> bookedSlots = {};
   List<String> userSelectedSlots = [];
   bool isLoading = true;
+  bool isLiked = false;
+
+  final Color primaryColor = const Color(0xFF22c55e);
 
   @override
   void initState() {
@@ -27,29 +30,31 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
   void _loadFields() async {
     final data = await ApiService.getFields(widget.venue.id);
-    setState(() {
-      fields = data;
-      isLoading = false;
-      if (fields.isNotEmpty) {
-        selectedField = fields[0];
-        _checkSlots();
-      }
-    });
+    if (mounted) {
+      setState(() {
+        fields = data;
+        isLoading = false;
+        if (fields.isNotEmpty) {
+          selectedField = fields[0];
+          _checkSlots();
+        }
+      });
+    }
   }
 
   void _checkSlots() async {
     if (selectedField == null) return;
     String dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
-
     final slots = await ApiService.checkAvailability(
       selectedField!.id,
       dateStr,
     );
-
-    setState(() {
-      bookedSlots = slots;
-      userSelectedSlots.clear();
-    });
+    if (mounted) {
+      setState(() {
+        bookedSlots = slots;
+        userSelectedSlots.clear();
+      });
+    }
   }
 
   @override
@@ -59,20 +64,38 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 250,
             pinned: true,
+            backgroundColor: primaryColor,
             flexibleSpace: FlexibleSpaceBar(
-              background: Image.network(
-                widget.venue.imageUrl,
-                fit: BoxFit.cover,
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    widget.venue.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (c, e, s) => Container(color: Colors.grey),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.8),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
               title: Text(
                 widget.venue.name,
-                style: const TextStyle(fontSize: 16),
+                style: const TextStyle(color: Colors.white),
               ),
             ),
           ),
-
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -85,21 +108,13 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   ),
                   const SizedBox(height: 10),
                   if (isLoading)
-                    const CircularProgressIndicator()
+                    const Center(child: CircularProgressIndicator())
+                  else if (fields.isEmpty)
+                    const Text("Tidak ada lapangan tersedia")
                   else
                     ...fields.map((field) => _buildFieldItem(field)),
 
                   const SizedBox(height: 20),
-
-                  const Text(
-                    "Pilih Tanggal",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildDatePicker(),
-
-                  const SizedBox(height: 20),
-
                   if (selectedField != null) ...[
                     Text(
                       "Jadwal - ${selectedField!.name}",
@@ -111,39 +126,12 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                     const SizedBox(height: 10),
                     _buildTimeGrid(),
                   ],
-
                   const SizedBox(height: 100),
                 ],
               ),
             ),
           ),
         ],
-      ),
-
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        color: Colors.white,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-          ),
-          onPressed: userSelectedSlots.isEmpty
-              ? null
-              : () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        "Booking ${userSelectedSlots.length} jam...",
-                      ),
-                    ),
-                  );
-                },
-          child: Text(
-            "Booking (${userSelectedSlots.length} Jam)",
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
       ),
     );
   }
@@ -160,8 +148,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: isSelected ? Border.all(color: Colors.green, width: 2) : null,
+          border: isSelected ? Border.all(color: primaryColor, width: 2) : null,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4),
+          ],
         ),
         child: Row(
           children: [
@@ -172,55 +163,14 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               ),
             ),
             Text(
-              "Rp ${field.pricePerHour}/jam",
-              style: const TextStyle(color: Colors.green),
+              "Rp ${field.pricePerHour}",
+              style: TextStyle(
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDatePicker() {
-    return SizedBox(
-      height: 70,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 7,
-        itemBuilder: (context, index) {
-          final date = DateTime.now().add(Duration(days: index));
-          final isSelected = date.day == selectedDate.day;
-          return GestureDetector(
-            onTap: () {
-              setState(() => selectedDate = date);
-              _checkSlots();
-            },
-            child: Container(
-              width: 60,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.green : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected ? Colors.green : Colors.grey[300]!,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(DateFormat('EEE').format(date)),
-                  Text(
-                    "${date.day}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -239,29 +189,21 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       itemBuilder: (context, index) {
         int hour = 8 + index;
         String timeLabel = "${hour.toString().padLeft(2, '0')}:00";
-
         String status = bookedSlots[timeLabel] ?? 'available';
-        bool isUserSelected = userSelectedSlots.contains(timeLabel);
+        bool isSelected = userSelectedSlots.contains(timeLabel);
 
-        Color bgColor = Colors.white;
-        Color textColor = Colors.black;
-
-        if (status == 'booked') {
-          bgColor = Colors.red.shade100;
-          textColor = Colors.red;
-        } else if (status == 'locked') {
-          bgColor = Colors.amber.shade100;
-          textColor = Colors.orange[800]!;
-        } else if (isUserSelected) {
-          bgColor = Colors.green;
-          textColor = Colors.white;
-        }
+        Color bgColor = status == 'booked'
+            ? Colors.red[100]!
+            : (isSelected ? primaryColor : Colors.white);
+        Color txtColor = status == 'booked'
+            ? Colors.red
+            : (isSelected ? Colors.white : Colors.black);
 
         return GestureDetector(
           onTap: () {
             if (status != 'available') return;
             setState(() {
-              if (isUserSelected)
+              if (isSelected)
                 userSelectedSlots.remove(timeLabel);
               else
                 userSelectedSlots.add(timeLabel);
@@ -276,7 +218,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             alignment: Alignment.center,
             child: Text(
               timeLabel,
-              style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+              style: TextStyle(color: txtColor, fontWeight: FontWeight.bold),
             ),
           ),
         );
