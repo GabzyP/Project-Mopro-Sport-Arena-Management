@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/venue_model.dart';
 import '../services/api_service.dart';
+import 'payment_screen.dart';
 
 class VenueDetailScreen extends StatefulWidget {
   final Venue venue;
@@ -21,6 +22,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   bool isLiked = false;
 
   final Color primaryColor = const Color(0xFF22c55e);
+  final Color bgColor = const Color(0xFFf9fafb);
 
   @override
   void initState() {
@@ -44,99 +46,307 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
   void _checkSlots() async {
     if (selectedField == null) return;
+
+    setState(() {
+      userSelectedSlots.clear();
+      bookedSlots = {};
+    });
+
     String dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
     final slots = await ApiService.checkAvailability(
       selectedField!.id,
       dateStr,
     );
+
     if (mounted) {
       setState(() {
         bookedSlots = slots;
-        userSelectedSlots.clear();
       });
     }
+  }
+
+  List<String> _generateTimeSlots() {
+    int startHour = int.parse(widget.venue.openTime.split(':')[0]);
+    int endHour = int.parse(widget.venue.closeTime.split(':')[0]);
+
+    List<String> slots = [];
+    for (int i = startHour; i < endHour; i++) {
+      slots.add("${i.toString().padLeft(2, '0')}:00");
+    }
+    return slots;
+  }
+
+  String formatRupiah(double number) {
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(number);
+  }
+
+  double get totalPrice {
+    if (selectedField == null) return 0;
+    return selectedField!.pricePerHour * userSelectedSlots.length;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 250,
-            pinned: true,
-            backgroundColor: primaryColor,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    widget.venue.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (c, e, s) => Container(color: Colors.grey),
+      backgroundColor: bgColor,
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 250,
+                pinned: true,
+                backgroundColor: primaryColor,
+                leading: _buildCircleButton(
+                  icon: Icons.arrow_back,
+                  onTap: () => Navigator.pop(context),
+                ),
+                actions: [
+                  _buildCircleButton(
+                    icon: isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: isLiked ? Colors.red : Colors.black,
+                    onTap: () => setState(() => isLiked = !isLiked),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.8),
-                        ],
-                      ),
-                    ),
-                  ),
+                  const SizedBox(width: 8),
                 ],
-              ),
-              title: Text(
-                widget.venue.name,
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Pilih Lapangan",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(widget.venue.imageUrl, fit: BoxFit.cover),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.8),
+                            ],
+                            stops: const [0.5, 1.0],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.venue.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.access_time,
+                                  color: Colors.white70,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "${widget.venue.openTime} - ${widget.venue.closeTime}",
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  if (isLoading)
-                    const Center(child: CircularProgressIndicator())
-                  else if (fields.isEmpty)
-                    const Text("Tidak ada lapangan tersedia")
-                  else
-                    ...fields.map((field) => _buildFieldItem(field)),
+                ),
+              ),
 
-                  const SizedBox(height: 20),
-                  if (selectedField != null) ...[
-                    Text(
-                      "Jadwal - ${selectedField!.name}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Pilih Lapangan",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      if (isLoading)
+                        const Center(child: CircularProgressIndicator())
+                      else
+                        ...fields.map((field) => _buildFieldCard(field)),
+
+                      const SizedBox(height: 20),
+
+                      if (selectedField != null) ...[
+                        const Text(
+                          "Pilih Tanggal",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildDatePicker(),
+
+                        const SizedBox(height: 20),
+
+                        Row(
+                          children: [
+                            _buildLegendItem(
+                              Colors.white,
+                              "Tersedia",
+                              border: true,
+                            ),
+                            const SizedBox(width: 12),
+                            _buildLegendItem(Colors.amber.shade100, "Diproses"),
+                            const SizedBox(width: 12),
+                            _buildLegendItem(Colors.red.shade100, "Terpesan"),
+                            const SizedBox(width: 12),
+                            _buildLegendItem(
+                              primaryColor,
+                              "Dipilih",
+                              textColor: Colors.white,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        Text(
+                          "Pilih Waktu",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildTimeGrid(),
+                        const SizedBox(height: 100),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          if (selectedField != null)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Total (${userSelectedSlots.length} jam)",
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          formatRupiah(totalPrice),
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ],
+                    ),
+                    ElevatedButton(
+                      onPressed: userSelectedSlots.isEmpty
+                          ? null
+                          : () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PaymentScreen(
+                                    field: selectedField!,
+                                    venueName: widget.venue.name,
+                                    date: selectedDate,
+                                    slots: userSelectedSlots,
+                                  ),
+                                ),
+                              );
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        "Lanjut Pembayaran",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    _buildTimeGrid(),
                   ],
-                  const SizedBox(height: 100),
-                ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildFieldItem(Field field) {
+  Widget _buildCircleButton({
+    required IconData icon,
+    Color? color,
+    VoidCallback? onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.all(8),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: color, size: 20),
+        onPressed: onTap,
+      ),
+    );
+  }
+
+  Widget _buildFieldCard(Field field) {
     bool isSelected = selectedField?.id == field.id;
     return GestureDetector(
       onTap: () {
@@ -144,29 +354,72 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         _checkSlots();
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: isSelected ? Border.all(color: primaryColor, width: 2) : null,
           borderRadius: BorderRadius.circular(12),
+          border: isSelected
+              ? Border.all(color: primaryColor, width: 2)
+              : Border.all(color: Colors.transparent),
           boxShadow: [
-            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 4),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Row(
           children: [
-            Expanded(
-              child: Text(
-                field.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                field.imageUrl,
+                width: 70,
+                height: 70,
+                fit: BoxFit.cover,
+                errorBuilder: (c, e, s) =>
+                    Container(width: 70, height: 70, color: Colors.grey[200]),
               ),
             ),
-            Text(
-              "Rp ${field.pricePerHour}",
-              style: TextStyle(
-                color: primaryColor,
-                fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    field.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      field.sportType,
+                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "${formatRupiah(field.pricePerHour)}/jam",
+                    style: TextStyle(
+                      color: primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -175,50 +428,152 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
+  Widget _buildDatePicker() {
+    return SizedBox(
+      height: 75,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: 14,
+        itemBuilder: (context, index) {
+          final date = DateTime.now().add(Duration(days: index));
+          final isSelected =
+              date.day == selectedDate.day && date.month == selectedDate.month;
+          return GestureDetector(
+            onTap: () {
+              setState(() => selectedDate = date);
+              _checkSlots();
+            },
+            child: Container(
+              width: 55,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                color: isSelected ? primaryColor : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? primaryColor : Colors.grey[300]!,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    DateFormat('EEE', 'id_ID').format(date),
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey,
+                      fontSize: 11,
+                    ),
+                  ),
+                  Text(
+                    "${date.day}",
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    DateFormat('MMM', 'id_ID').format(date),
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(
+    Color color,
+    String label, {
+    bool border = false,
+    Color textColor = Colors.black,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: border ? Border.all(color: Colors.grey[300]!) : null,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+      ],
+    );
+  }
+
   Widget _buildTimeGrid() {
+    List<String> timeSlots = _generateTimeSlots();
+
+    if (timeSlots.isEmpty) {
+      return const Center(child: Text("Tidak ada jadwal tersedia"));
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        childAspectRatio: 1.5,
+        childAspectRatio: 2.0,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
-      itemCount: 15,
+      itemCount: timeSlots.length,
       itemBuilder: (context, index) {
-        int hour = 8 + index;
-        String timeLabel = "${hour.toString().padLeft(2, '0')}:00";
+        String timeLabel = timeSlots[index];
         String status = bookedSlots[timeLabel] ?? 'available';
         bool isSelected = userSelectedSlots.contains(timeLabel);
 
-        Color bgColor = status == 'booked'
-            ? Colors.red[100]!
-            : (isSelected ? primaryColor : Colors.white);
-        Color txtColor = status == 'booked'
-            ? Colors.red
-            : (isSelected ? Colors.white : Colors.black);
+        Color bgColor;
+        Color txtColor;
+
+        if (status == 'booked') {
+          bgColor = Colors.red.shade100;
+          txtColor = Colors.red;
+        } else if (status == 'locked') {
+          bgColor = Colors.amber.shade100;
+          txtColor = Colors.amber[800]!;
+        } else if (isSelected) {
+          bgColor = primaryColor;
+          txtColor = Colors.white;
+        } else {
+          bgColor = Colors.white;
+          txtColor = Colors.black;
+        }
 
         return GestureDetector(
           onTap: () {
             if (status != 'available') return;
             setState(() {
-              if (isSelected)
-                userSelectedSlots.remove(timeLabel);
-              else
-                userSelectedSlots.add(timeLabel);
+              isSelected
+                  ? userSelectedSlots.remove(timeLabel)
+                  : userSelectedSlots.add(timeLabel);
             });
           },
           child: Container(
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(
+                color: isSelected ? primaryColor : Colors.grey[300]!,
+              ),
             ),
             alignment: Alignment.center,
             child: Text(
               timeLabel,
-              style: TextStyle(color: txtColor, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: txtColor,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         );

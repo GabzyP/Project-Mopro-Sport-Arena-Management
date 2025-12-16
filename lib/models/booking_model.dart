@@ -8,6 +8,7 @@ class Booking {
   final double totalPrice;
   final String status;
   final String imageUrl;
+  final String bookingCode;
 
   Booking({
     required this.id,
@@ -19,6 +20,7 @@ class Booking {
     required this.totalPrice,
     required this.status,
     required this.imageUrl,
+    required this.bookingCode,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class Booking {
       totalPrice: double.parse((json['total_price'] ?? 0).toString()),
       status: json['status'],
       imageUrl: json['image_url'] ?? 'https://via.placeholder.com/150',
+      bookingCode: json['booking_code'] ?? 'SA-0000',
     );
   }
 }
