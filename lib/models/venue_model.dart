@@ -4,6 +4,9 @@ class Venue {
   final String address;
   final String imageUrl;
   final double rating;
+  final String openTime;
+  final String closeTime;
+  final double minPrice;
   final List<String> sportTypes;
 
   Venue({
@@ -12,6 +15,9 @@ class Venue {
     required this.address,
     required this.imageUrl,
     required this.rating,
+    required this.openTime,
+    required this.closeTime,
+    required this.minPrice,
     required this.sportTypes,
   });
 
@@ -29,12 +35,14 @@ class Venue {
       address: json['address'] ?? 'Lokasi belum tersedia',
       imageUrl: json['image_url'] ?? 'https://via.placeholder.com/300',
       rating: double.tryParse((json['rating'] ?? '0').toString()) ?? 0.0,
+      openTime: (json['open_time'] ?? '08:00').toString().substring(0, 5),
+      closeTime: (json['close_time'] ?? '22:00').toString().substring(0, 5),
+      minPrice: double.tryParse((json['min_price'] ?? '0').toString()) ?? 0.0,
       sportTypes: parsedSports,
     );
   }
 }
 
-// Class ini yang HILANG, makanya error
 class Field {
   final String id;
   final String name;

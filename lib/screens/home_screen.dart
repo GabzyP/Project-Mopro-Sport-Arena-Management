@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../models/venue_model.dart';
 import '../services/api_service.dart';
 import '../widgets/venue_card.dart';
@@ -13,7 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final Color primaryColor = const Color(0xFF22c55e);
-  final Color secondaryColor = const Color(0xFFf59e0b);
+  final Color secondaryColor = const Color.fromARGB(255, 87, 55, 0);
   final Color bgColor = const Color(0xFFf9fafb);
 
   List<Venue> venues = [];
