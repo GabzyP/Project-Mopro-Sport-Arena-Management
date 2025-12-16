@@ -4,11 +4,17 @@ import '../models/venue_model.dart';
 import '../models/booking_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.0.2.2/arena_sport';
+  static const String baseUrl = 'http://10.228.184.179/arena_sport';
 
-  static Future<List<Venue>> getVenues() async {
+  static Future<List<Venue>> getVenues({
+    String category = 'all',
+    String query = '',
+  }) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/get_venues.php'));
+      String url = '$baseUrl/get_venues.php?category=$category&search=$query';
+
+      final response = await http.get(Uri.parse(url));
+
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
         return data.map((json) => Venue.fromJson(json)).toList();
@@ -21,25 +27,20 @@ class ApiService {
   }
 
   static Future<List<Field>> getFields(String venueId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return [
-      Field(
-        id: '1',
-        name: 'Lapangan A (Vinyl)',
-        sportType: 'futsal',
-        pricePerHour: 120000,
-        imageUrl: 'https://via.placeholder.com/150',
-        facilities: ['WiFi', 'AC'],
-      ),
-      Field(
-        id: '2',
-        name: 'Lapangan B (Sintetis)',
-        sportType: 'futsal',
-        pricePerHour: 100000,
-        imageUrl: 'https://via.placeholder.com/150',
-        facilities: ['Kantin'],
-      ),
-    ];
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_fields.php?venue_id=$venueId'),
+      );
+
+      if (response.statusCode == 200) {
+        final List data = json.decode(response.body);
+        return data.map((json) => Field.fromJson(json)).toList();
+      }
+      return [];
+    } catch (e) {
+      print("Error getFields: $e");
+      return [];
+    }
   }
 
   static Future<Map<String, dynamic>> checkAvailability(
@@ -86,6 +87,33 @@ class ApiService {
       return {"total_venues": "0", "total_fields": "0", "availability": "0%"};
     } catch (e) {
       return {"total_venues": "-", "total_fields": "-", "availability": "-"};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createBooking({
+    required String fieldId,
+    required String date,
+    required List<String> slots,
+    required double totalPrice,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/create_booking.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'field_id': fieldId,
+          'date': date,
+          'slots': slots,
+          'total_price': totalPrice,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return {"status": "error", "message": "Gagal menghubungi server"};
+    } catch (e) {
+      return {"status": "error", "message": e.toString()};
     }
   }
 }
