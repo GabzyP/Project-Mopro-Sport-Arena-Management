@@ -28,7 +28,7 @@ if (empty($email) || empty($password)) {
     exit();
 }
 
-$sql = "SELECT id, password, name, email, role FROM users WHERE email = '$email'";
+$sql = "SELECT id, password, name, email, role, photo_profile  FROM users WHERE email = '$email'";
 $result = $conn->query($sql);
 
 if ($result && $result->num_rows > 0) {
@@ -37,13 +37,14 @@ if ($result && $result->num_rows > 0) {
     if (password_verify($password, $user['password'])) {
         
         echo json_encode([
-            "status" => "success",  
+            "status" => "success", 
             "message" => "Login Berhasil!",
-            "data" => [           
+            "data" => [
                 "id" => $user['id'],
                 "name" => $user['name'],
-                "email" => $user['email'],
-                "role" => $user['role']
+                "email" => $user['email'], 
+                "role" => $user['role'],
+                "photo_profile" => $user['photo_profile'] ?? null 
             ]
         ]);
         

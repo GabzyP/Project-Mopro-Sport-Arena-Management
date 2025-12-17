@@ -59,10 +59,15 @@ class AuthService {
 
   static Future<void> saveUserSession(Map<String, dynamic> user) async {
     final prefs = await SharedPreferences.getInstance();
+
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('userId', user['id'].toString());
     await prefs.setString('userName', user['name']);
     await prefs.setString('userRole', user['role']);
+    await prefs.setString('userEmail', user['email']);
+    if (user['photo_profile'] != null) {
+      await prefs.setString('userPhoto', user['photo_profile']);
+    }
   }
 
   static Future<void> logout() async {
