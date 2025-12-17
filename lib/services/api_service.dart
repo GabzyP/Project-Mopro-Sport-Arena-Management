@@ -4,7 +4,7 @@ import '../models/venue_model.dart';
 import '../models/booking_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.1.9/arena_sport';
+  static const String baseUrl = 'http://192.168.1.6/arena_sport';
 
   static Future<List<Venue>> getVenues({
     String category = 'all',
@@ -114,6 +114,77 @@ class ApiService {
       return {"status": "error", "message": "Gagal menghubungi server"};
     } catch (e) {
       return {"status": "error", "message": e.toString()};
+    }
+  }
+
+  static Future<bool> addField({
+    required String venueId,
+    required String name,
+    required String sportType,
+    required double price,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/add_field.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'venue_id': venueId,
+          'name': name,
+          'sport_type': sportType,
+          'price': price,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        return result['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      print("Error addField: $e");
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdminDashboardData() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/get_admin_data.php'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return {};
+    } catch (e) {
+      print("Error getAdminData: $e");
+      return {};
+    }
+  }
+
+  static Future<bool> updateOrderStatus(
+    String orderId,
+    String newStatus,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/update_order_status.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'id': orderId, 'status': newStatus}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> updateUserStatus(String userId, String newStatus) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/update_user_status.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'id': userId, 'status': newStatus}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 }

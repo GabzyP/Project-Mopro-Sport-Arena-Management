@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
+
 import 'screens/main_layout.dart';
 import 'screens/auth_screen.dart';
 import 'services/auth_service.dart';
+import 'screens/admin_main_layout.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
+
+  await AuthService.logout();
+
   runApp(const MyApp());
 }
 
@@ -31,7 +36,21 @@ class MyApp extends StatelessWidget {
             );
           }
           if (snapshot.data == true) {
-            return const MainLayout();
+            return FutureBuilder<String?>(
+              future: AuthService.getUserRole(),
+              builder: (context, roleSnapshot) {
+                if (roleSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (roleSnapshot.data == 'admin') {
+                  return const AdminMainLayout();
+                } else {
+                  return const MainLayout();
+                }
+              },
+            );
           } else {
             return const AuthScreen();
           }

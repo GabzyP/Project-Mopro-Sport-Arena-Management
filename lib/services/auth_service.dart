@@ -8,15 +8,26 @@ class AuthService {
     String email,
     String password,
   ) async {
-    final response = await http.post(
-      Uri.parse('${ApiService.baseUrl}/login.php'),
-      body: {'email': email, 'password': password},
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/login.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email, 'password': password}),
+      );
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
+      print("Login Status: ${response.statusCode}");
+      print("Login Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return {
+        "status": "error",
+        "message": "Server Error: ${response.statusCode}",
+      };
+    } catch (e) {
+      return {"status": "error", "message": "Koneksi gagal: $e"};
     }
-    return {"status": "error", "message": "Koneksi gagal"};
   }
 
   static Future<Map<String, dynamic>> register(
@@ -25,20 +36,25 @@ class AuthService {
     String password,
     String phone,
   ) async {
-    final response = await http.post(
-      Uri.parse('${ApiService.baseUrl}/register.php'),
-      body: {
-        'name': name,
-        'email': email,
-        'password': password,
-        'phone': phone,
-      },
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/register.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'phone': phone,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return {"status": "error", "message": "Koneksi gagal"};
+    } catch (e) {
+      return {"status": "error", "message": "Koneksi gagal: $e"};
     }
-    return {"status": "error", "message": "Koneksi gagal"};
   }
 
   static Future<void> saveUserSession(Map<String, dynamic> user) async {

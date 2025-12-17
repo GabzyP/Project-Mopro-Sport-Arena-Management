@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'main_layout.dart';
+import 'admin_main_layout.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -37,8 +38,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           );
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const MainLayout()),
-            (r) => false,
+            MaterialPageRoute(builder: (_) => const AdminMainLayout()),
+            (route) => false,
           );
         }
       } else {
