@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:io';
 import '../models/venue_model.dart';
 import '../models/booking_model.dart';
 
@@ -185,6 +186,99 @@ class ApiService {
       return response.statusCode == 200;
     } catch (e) {
       return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateProfilePhoto(
+    String userId,
+    File imageFile,
+  ) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/update_photo.php'),
+      );
+
+      request.fields['user_id'] = userId;
+      var pic = await http.MultipartFile.fromPath('image', imageFile.path);
+      request.files.add(pic);
+
+      var response = await request.send();
+      var responseData = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        return json.decode(responseData);
+      } else {
+        return {"status": "error", "message": "Server error"};
+      }
+    } catch (e) {
+      return {"status": "error", "message": e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> getUserDetails(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_user_details.php?user_id=$userId'),
+      );
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  static Future<List<dynamic>> getNotifications(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_notifications.php?user_id=$userId'),
+      );
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<List<dynamic>> getSavedPaymentMethods(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_payment_methods.php?user_id=$userId'),
+      );
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<List<dynamic>> getUserBookings(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_user_bookings.php?user_id=$userId'),
+      );
+      if (response.statusCode == 200) return json.decode(response.body);
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<List<dynamic>> getUserReviews(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_my_reviews.php?user_id=$userId'),
+      );
+      if (response.statusCode == 200) return json.decode(response.body);
+      return [];
+    } catch (e) {
+      return [];
     }
   }
 }

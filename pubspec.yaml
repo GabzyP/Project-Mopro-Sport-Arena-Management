@@ -16,6 +16,7 @@ dependencies:
   shared_preferences: ^2.2.2
   qr_flutter: ^4.1.0
   fl_chart: ^0.66.0
+  image_picker: ^1.0.4
 
 dev_dependencies:
   flutter_test:
