@@ -8,6 +8,8 @@ class Venue {
   final String closeTime;
   final double minPrice;
   final List<String> sportTypes;
+  final double latitude;
+  final double longitude;
 
   Venue({
     required this.id,
@@ -19,6 +21,8 @@ class Venue {
     required this.closeTime,
     required this.minPrice,
     required this.sportTypes,
+    required this.latitude,
+    required this.longitude,
   });
 
   factory Venue.fromJson(Map<String, dynamic> json) {
@@ -39,6 +43,8 @@ class Venue {
       closeTime: (json['close_time'] ?? '22:00').toString().substring(0, 5),
       minPrice: double.tryParse((json['min_price'] ?? '0').toString()) ?? 0.0,
       sportTypes: parsedSports,
+      latitude: double.tryParse(json['latitude'].toString()) ?? 0.0,
+      longitude: double.tryParse(json['longitude'].toString()) ?? 0.0,
     );
   }
 }
