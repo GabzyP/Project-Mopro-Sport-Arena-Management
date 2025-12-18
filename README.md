@@ -106,11 +106,3 @@ Agar aplikasi di HP/Emulator bisa terhubung ke Laptop:
     ```
 
 ---
-
-## 📸 Screenshots
-
-*(Tambahkan screenshot aplikasi di sini jika ada, atau biarkan kosong)*
-
----
-
-Copyright © 2025 Kelompok 6 - Sport Arena Management
