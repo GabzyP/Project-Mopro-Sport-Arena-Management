@@ -5,7 +5,7 @@ import '../models/venue_model.dart';
 import '../models/booking_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.1.6/arena_sport';
+  static const String baseUrl = 'http://10.168.11.9/arena_sport';
 
   static Future<List<Venue>> getVenues({
     String category = 'all',
