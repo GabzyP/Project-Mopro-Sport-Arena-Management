@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import '../models/venue_model.dart';
 import '../services/api_service.dart';
 import '../widgets/venue_card.dart';
 import 'venue_detail_screen.dart';
+import 'location_picker_screen.dart';
+import 'package:geolocator/geolocator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,11 +18,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final Color secondaryColor = const Color.fromARGB(255, 87, 55, 0);
   final Color bgColor = const Color(0xFFf9fafb);
 
+  String currentLocation = "Pilih Lokasi";
+
   List<Venue> venues = [];
   List<Venue> filteredVenues = [];
   bool isLoading = true;
   String selectedSport = 'all';
   String searchQuery = '';
+
+  double? selectedLat;
+  double? selectedLng;
 
   final List<Map<String, dynamic>> sportFilters = [
     {'id': 'all', 'label': 'Semua', 'emoji': '🏟'},
@@ -46,6 +52,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _loadVenues() async {
     final dataVenues = await ApiService.getVenues();
+    if (dataVenues.isNotEmpty) {
+      print(
+        "DEBUG: Venue ${dataVenues[0].name} - Lat: ${dataVenues[0].latitude}",
+      );
+    }
     final dataStats = await ApiService.getHomeStats();
 
     if (mounted) {
@@ -64,12 +75,27 @@ class _HomeScreenState extends State<HomeScreen> {
         final matchSport =
             selectedSport == 'all' ||
             venue.sportTypes.any(
-              (s) => s.toLowerCase().contains(selectedSport),
+              (s) => s.toLowerCase().contains(selectedSport.toLowerCase()),
             );
+
         final matchSearch =
             venue.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
             venue.address.toLowerCase().contains(searchQuery.toLowerCase());
-        return matchSport && matchSearch;
+
+        bool matchLocation = true;
+        if (selectedLat != null && selectedLng != null) {
+          double distanceInMeters = Geolocator.distanceBetween(
+            selectedLat!,
+            selectedLng!,
+            venue.latitude,
+            venue.longitude,
+          );
+          if (distanceInMeters > 500000) {
+            matchLocation = false;
+          }
+        }
+
+        return matchSport && matchSearch && matchLocation;
       }).toList();
     });
   }
@@ -137,7 +163,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -178,17 +203,44 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Icon(Icons.location_on, size: 16, color: primaryColor),
                   const SizedBox(width: 4),
-                  const Text(
-                    'Jakarta Selatan',
-                    style: TextStyle(fontWeight: FontWeight.w500),
+                  Expanded(
+                    child: Text(
+                      currentLocation,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Ubah',
-                    style: TextStyle(
-                      color: primaryColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LocationPickerScreen(),
+                        ),
+                      );
+
+                      if (result != null && result is Map<String, dynamic>) {
+                        setState(() {
+                          currentLocation =
+                              result['address'] ?? "Lokasi tidak diketahui";
+                          selectedLat = double.tryParse(
+                            result['lat'].toString(),
+                          );
+                          selectedLng = double.tryParse(
+                            result['lng'].toString(),
+                          );
+                          _filterVenues();
+                        });
+                      }
+                    },
+                    child: Text(
+                      'Ubah',
+                      style: TextStyle(
+                        color: primaryColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -232,9 +284,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                   blurRadius: 2,
                                 ),
                               ],
-                        border: isSelected
-                            ? null
-                            : Border.all(color: Colors.transparent),
                       ),
                       child: Row(
                         children: [
@@ -378,13 +427,14 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: const [
           Text('🏟', style: TextStyle(fontSize: 48)),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Tidak ada venue',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           Text(
             'Coba ubah filter atau lokasi pencarian',
+            textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey),
           ),
         ],
