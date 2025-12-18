@@ -3,33 +3,76 @@ import '../services/api_service.dart';
 import 'venue_list_admin_screen.dart';
 import 'add_field_screen.dart';
 
+// --- SCREENS VERIFIKASI ---
 class VerificationScreen extends StatelessWidget {
   const VerificationScreen({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Verifikasi Booking')),
-    body: const Center(child: Text('Halaman Verifikasi Pending Booking')),
+    appBar: AppBar(
+      title: const Text('Verifikasi Booking', style: TextStyle(fontWeight: FontWeight.bold)),
+      centerTitle: true,
+      elevation: 0,
+    ),
+    body: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.pending_actions_rounded, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          const Text('Belum ada verifikasi tertunda', style: TextStyle(color: Colors.grey, fontSize: 16)),
+        ],
+      ),
+    ),
   );
 }
 
+// --- SCREENS LAPORAN ---
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Laporan & Analitik')),
-    body: const Center(child: Text('Halaman Laporan Penjualan/Ketersediaan')),
+    appBar: AppBar(
+      title: const Text('Laporan & Analitik', style: TextStyle(fontWeight: FontWeight.bold)),
+      centerTitle: true,
+      elevation: 0,
+    ),
+    body: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.bar_chart_rounded, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          const Text('Menyiapkan data analitik...', style: TextStyle(color: Colors.grey, fontSize: 16)),
+        ],
+      ),
+    ),
   );
 }
 
+// --- SCREENS MANAJEMEN ---
 class UserManagementScreen extends StatelessWidget {
   const UserManagementScreen({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Manajemen Pengguna')),
-    body: const Center(child: Text('Halaman Daftar dan Edit Pengguna')),
+    appBar: AppBar(
+      title: const Text('Manajemen Pengguna', style: TextStyle(fontWeight: FontWeight.bold)),
+      centerTitle: true,
+      elevation: 0,
+    ),
+    body: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.people_alt_rounded, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          const Text('Daftar pengguna sedang dimuat', style: TextStyle(color: Colors.grey, fontSize: 16)),
+        ],
+      ),
+    ),
   );
 }
 
+// --- ADMIN HOME SCREEN ---
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
@@ -40,7 +83,7 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final Color primaryColor = const Color(0xFF22c55e);
   final Color secondaryColor = const Color(0xFFfacc15);
-  final Color bgColor = const Color(0xFFf9fafb);
+  final Color bgColor = const Color(0xFFf8fafc); // Warna background lebih soft
 
   bool isLoading = true;
 
@@ -89,59 +132,98 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header dengan Gradient dan Glassmorphism feel
             Container(
-              padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
               decoration: BoxDecoration(
-                color: primaryColor,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
+                gradient: LinearGradient(
+                  colors: [primaryColor, const Color(0xFF16a34a)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  )
+                ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Admin Dashboard 🛠️',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Admin Panel',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Dashboard 🛠️',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.settings_suggest_rounded, color: Colors.white),
+                      onPressed: () {},
                     ),
                   ),
-                  Icon(Icons.settings, color: Colors.white),
                 ],
               ),
             ),
 
             Padding(
-              padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Ringkasan Kinerja',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Color(0xFF1e293b),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? Center(child: CircularProgressIndicator(color: primaryColor))
                       : Row(
                           children: [
                             _buildAdminStatCard(
                               adminStats['total_revenue'].toString(),
-                              'Total Pemasukan',
-                              Colors.green.shade700,
+                              'Pemasukan',
+                              Colors.white,
+                              primaryColor,
+                              Icons.account_balance_wallet_rounded,
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 16),
                             _buildAdminStatCard(
                               adminStats['today_bookings'].toString(),
                               'Booking Hari Ini',
+                              Colors.white,
                               secondaryColor,
+                              Icons.calendar_today_rounded,
                             ),
                           ],
                         ),
@@ -150,18 +232,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
 
             const Padding(
-              padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                'Aksi & Manajemen Cepat',
+                'Aksi & Manajemen',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Color(0xFF1e293b),
                 ),
               ),
             ),
+            const SizedBox(height: 16),
             _buildAdminActions(),
 
+            const SizedBox(height: 32),
             _buildLatestActivitySummary(),
           ],
         ),
@@ -169,36 +253,45 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _buildAdminStatCard(String val, String label, Color color) {
+  Widget _buildAdminStatCard(String val, String label, Color bgColor, Color accentColor, IconData icon) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: bgColor,
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: accentColor, size: 20),
+            ),
+            const SizedBox(height: 16),
             Text(
               val,
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: const Color(0xFF0f172a),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
             ),
           ],
         ),
@@ -208,33 +301,31 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   Widget _buildAdminActions() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.count(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         crossAxisCount: 3,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.85,
         children: [
           _actionItem(
-            Icons.verified_user,
-            'Verifikasi Pending',
+            Icons.verified_rounded,
+            'Verifikasi',
             primaryColor,
-            adminStats['pending_verification'].toString(),
             const VerificationScreen(),
           ),
           _actionItem(
-            Icons.receipt_long,
-            'Laporan & Analitik',
+            Icons.analytics_rounded,
+            'Analitik',
             Colors.blue,
-            'Lihat',
             const ReportsScreen(),
           ),
           _actionItem(
-            Icons.business_center,
-            'Manajemen Venue',
-            Colors.purple,
-            'Kelola',
+            Icons.apartment_rounded,
+            'Venues',
+            Colors.deepPurple,
             const VenueListAdminScreen(),
           ),
         ],
@@ -242,57 +333,43 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _actionItem(
-    IconData icon,
-    String title,
-    Color color,
-    String subtitle,
-    Widget targetScreen,
-  ) {
+  Widget _actionItem(IconData icon, String title, Color color, Widget targetScreen) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => targetScreen),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => targetScreen));
       },
       child: Container(
-        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 4,
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 30),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF334155),
+              ),
             ),
           ],
         ),
@@ -302,82 +379,74 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   Widget _buildLatestActivitySummary() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Aktivitas Terbaru',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Aktivitas Terbaru',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1e293b)),
+              ),
+              Icon(Icons.history_rounded, size: 20, color: Colors.grey.shade400),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _activityCard(
+            'Lapangan Terpopuler',
+            adminStats['popular_court'].toString(),
+            Icons.stars_rounded,
+            Colors.amber,
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Lapangan Terpopuler Saat Ini:',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    Text(
-                      adminStats['popular_court'].toString(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-                Icon(Icons.trending_up, color: primaryColor, size: 30),
-              ],
-            ),
+          _activityCard(
+            'Booking Terbaru',
+            adminStats['latest_booking'].toString(),
+            Icons.notifications_active_rounded,
+            primaryColor,
           ),
-          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+
+  Widget _activityCard(String title, String subtitle, IconData icon, Color iconColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Row(
+        children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Booking Baru:',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    Text(
-                      adminStats['latest_booking'].toString(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-                const Icon(Icons.receipt_long, color: Colors.orange, size: 30),
-              ],
-            ),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0f172a)),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Icon(Icons.chevron_right_rounded, color: Colors.grey.shade300),
         ],
       ),
     );

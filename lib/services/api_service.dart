@@ -281,4 +281,6 @@ class ApiService {
       return [];
     }
   }
+
+  static Future<dynamic> updateUserData(String s, String text, String text2) async {}
 }
