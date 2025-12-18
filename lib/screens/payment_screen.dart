@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/venue_model.dart';
 import '../services/api_service.dart';
 import 'main_layout.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PaymentScreen extends StatefulWidget {
   final Field field;
@@ -32,7 +33,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final Color infoBgColor = const Color(0xFFF9FAFB);
   final Color recurringBgColor = const Color(0xFFF0FDF4);
 
-  // --- DATA METODE PEMBAYARAN (List Biasa agar bisa ditambah) ---
   List<Map<String, dynamic>> eWallets = [
     {
       'id': 'gopay',
@@ -63,20 +63,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
     {'id': 'mandiri', 'name': 'Mandiri Virtual Account', 'fee': 4000},
   ];
 
-  // --- LOGIKA HARGA ---
   double get totalPrice => widget.field.pricePerHour * widget.slots.length;
 
   double get paymentFee {
     if (selectedPaymentMethod == null) return 0;
 
-    // Cek E-Wallet
     var wallet = eWallets.firstWhere(
       (e) => e['id'] == selectedPaymentMethod,
       orElse: () => {},
     );
     if (wallet.isNotEmpty) return (wallet['fee'] as int).toDouble();
 
-    // Cek Bank
     var bank = banks.firstWhere(
       (b) => b['id'] == selectedPaymentMethod,
       orElse: () => {},
@@ -96,14 +93,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     ).format(number);
   }
 
-  // --- FUNGSI TAMBAH METODE (DIPERBAIKI) ---
   void _showAddMethodDialog() {
     final TextEditingController nameController = TextEditingController();
-    String type = 'E-Wallet'; // Default value
+    String type = 'E-Wallet';
 
     showDialog(
       context: context,
-      builder: (ctx) { // Gunakan ctx untuk konteks dialog
+      builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
@@ -134,24 +130,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text("Batal", style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    "Batal",
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                  ),
                   onPressed: () {
                     if (nameController.text.isNotEmpty) {
-                      // Tutup dialog dulu
                       Navigator.pop(ctx);
 
-                      // Update STATE UTAMA (Halaman PaymentScreen)
                       setState(() {
                         final newItem = {
-                          'id': nameController.text.toLowerCase().replaceAll(' ', ''),
+                          'id': nameController.text.toLowerCase().replaceAll(
+                            ' ',
+                            '',
+                          ),
                           'name': nameController.text,
-                          'icon': type == 'E-Wallet' 
-                              ? Icons.account_balance_wallet 
+                          'icon': type == 'E-Wallet'
+                              ? Icons.account_balance_wallet
                               : Icons.account_balance,
-                          'color': Colors.grey, // Warna default untuk custom
+                          'color': Colors.grey,
                           'fee': type == 'E-Wallet' ? 0 : 4000,
                         };
 
@@ -163,11 +165,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       });
 
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Metode berhasil ditambahkan!")),
+                        const SnackBar(
+                          content: Text("Metode berhasil ditambahkan!"),
+                        ),
                       );
                     }
                   },
-                  child: const Text("Simpan", style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    "Simpan",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             );
@@ -187,22 +194,54 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     setState(() => isLoading = true);
 
-    final result = await ApiService.createBooking(
-      fieldId: widget.field.id,
-      date: DateFormat('yyyy-MM-dd').format(widget.date),
-      slots: widget.slots,
-      totalPrice: grandTotal,
-    );
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
 
-    if (mounted) setState(() => isLoading = false);
+    if (userId == null) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Sesi habis, silakan login ulang")),
+      );
+      return;
+    }
 
-    if (result['status'] == 'success') {
-      _showSuccessDialog(result['booking_code']);
-    } else {
+    try {
+      List<String> sortedSlots = List.from(widget.slots)..sort();
+      String startTime = sortedSlots.first;
+      String lastSlot = sortedSlots.last;
+
+      DateTime lastTimeDt = DateFormat("HH:mm").parse(sortedSlots.last);
+      String endTime = DateFormat(
+        "HH:mm",
+      ).format(lastTimeDt.add(const Duration(hours: 1)));
+
+      final result = await ApiService.createBooking(
+        userId: userId,
+        fieldId: widget.field.id,
+        date: DateFormat('yyyy-MM-dd').format(widget.date),
+        startTime: startTime,
+        endTime: endTime,
+        totalPrice: grandTotal,
+        paymentMethod: selectedPaymentMethod!,
+      );
+
+      if (mounted) setState(() => isLoading = false);
+
+      if (result['status'] == 'success') {
+        _showSuccessDialog(result['booking_code']);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'] ?? "Gagal booking")),
+          );
+        }
+      }
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'])),
-        );
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Terjadi kesalahan: $e")));
       }
     }
   }
@@ -233,7 +272,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   MaterialPageRoute(builder: (context) => const MainLayout()),
                   (route) => false,
                 ),
-                child: const Text("Kembali ke Beranda", style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  "Kembali ke Beranda",
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],
@@ -252,7 +294,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             Text(
               currentStep == 1 ? "Konfirmasi Booking" : "Pembayaran",
-              style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             Text(
               "Langkah $currentStep dari 2",
@@ -264,7 +310,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => currentStep == 2 ? setState(() => currentStep = 1) : Navigator.pop(context),
+          onPressed: () => currentStep == 2
+              ? setState(() => currentStep = 1)
+              : Navigator.pop(context),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(2),
@@ -286,18 +334,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // --- STEP 1: REVIEW ---
   Widget _buildStep1() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Detail Booking", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text(
+            "Detail Booking",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Column(
               children: [
                 Row(
@@ -306,8 +359,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
                         widget.field.imageUrl,
-                        width: 60, height: 60, fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => Container(width: 60, height: 60, color: Colors.grey[300]),
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey[300],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -315,9 +374,21 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(widget.field.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(
+                            widget.field.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text(widget.venueName, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                          Text(
+                            widget.venueName,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -326,14 +397,26 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: infoBgColor, borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(
+                    color: infoBgColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Column(
                     children: [
-                      _infoRow(Icons.calendar_today_outlined, DateFormat("EEEE, d MMMM yyyy", "id_ID").format(widget.date)),
+                      _infoRow(
+                        Icons.calendar_today_outlined,
+                        DateFormat(
+                          "EEEE, d MMMM yyyy",
+                          "id_ID",
+                        ).format(widget.date),
+                      ),
                       const SizedBox(height: 10),
                       _infoRow(Icons.access_time, widget.slots.join(", ")),
                       const SizedBox(height: 10),
-                      _infoRow(Icons.location_on_outlined, "Akan ditampilkan lokasi venue"),
+                      _infoRow(
+                        Icons.location_on_outlined,
+                        "Akan ditampilkan lokasi venue",
+                      ),
                     ],
                   ),
                 ),
@@ -341,7 +424,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // Toggle Booking Berkala
           GestureDetector(
             onTap: () => setState(() => isRecurring = !isRecurring),
             child: Container(
@@ -349,13 +431,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
               decoration: BoxDecoration(
                 color: isRecurring ? recurringBgColor : Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isRecurring ? primaryColor : Colors.transparent, width: 1.5),
+                border: Border.all(
+                  color: isRecurring ? primaryColor : Colors.transparent,
+                  width: 1.5,
+                ),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: const Icon(Icons.sync, color: Colors.blue, size: 20),
                   ),
                   const SizedBox(width: 12),
@@ -363,33 +451,61 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("Booking Berkala", style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text("Jadwal berulang setiap minggu", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                        const Text(
+                          "Booking Berkala",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          "Jadwal berulang setiap minggu",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  if (isRecurring) const Icon(Icons.check_circle, color: Color(0xFF22c55e)),
+                  if (isRecurring)
+                    const Icon(Icons.check_circle, color: Color(0xFF22c55e)),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-          // Rincian Harga
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Column(
               children: [
-                _priceRow("${widget.field.name} x ${widget.slots.length} jam", totalPrice),
+                _priceRow(
+                  "${widget.field.name} x ${widget.slots.length} jam",
+                  totalPrice,
+                ),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Biaya Layanan", style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                    const Text("Gratis", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text(
+                      "Biaya Layanan",
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ),
+                    const Text(
+                      "Gratis",
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                   ],
                 ),
-                const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider()),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(),
+                ),
                 _priceRow("Total", totalPrice, isTotal: true),
               ],
             ),
@@ -400,34 +516,36 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // --- STEP 2: PAYMENT (DENGAN TOMBOL TAMBAH YANG BERFUNGSI) ---
   Widget _buildStep2() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // TOMBOL TAMBAH METODE
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: _showAddMethodDialog, // PANGGIL DIALOG DI SINI
+              onPressed: _showAddMethodDialog,
               icon: const Icon(Icons.add, size: 18),
               label: const Text("Tambah Metode Pembayaran"),
               style: OutlinedButton.styleFrom(
                 foregroundColor: primaryColor,
                 side: BorderSide(color: primaryColor),
                 padding: const EdgeInsets.all(12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 24),
 
-          const Text("E-Wallet", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          const Text(
+            "E-Wallet",
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+          ),
           const SizedBox(height: 12),
-          
-          // GENERATE E-WALLET LIST
+
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -442,31 +560,39 @@ class _PaymentScreenState extends State<PaymentScreen> {
               final wallet = eWallets[index];
               bool isSelected = selectedPaymentMethod == wallet['id'];
               return GestureDetector(
-                onTap: () => setState(() => selectedPaymentMethod = wallet['id']),
+                onTap: () =>
+                    setState(() => selectedPaymentMethod = wallet['id']),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: isSelected ? Border.all(color: primaryColor, width: 2) : null,
+                    border: isSelected
+                        ? Border.all(color: primaryColor, width: 2)
+                        : null,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(wallet['icon'], color: wallet['color']),
                       const SizedBox(width: 8),
-                      Text(wallet['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        wallet['name'],
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ),
               );
             },
           ),
-          
+
           const SizedBox(height: 24),
-          const Text("Transfer Bank", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          const Text(
+            "Transfer Bank",
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+          ),
           const SizedBox(height: 12),
-          
-          // GENERATE BANK LIST
+
           ...banks.map((bank) {
             bool isSelected = selectedPaymentMethod == bank['id'];
             return GestureDetector(
@@ -477,26 +603,44 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: isSelected ? Border.all(color: primaryColor, width: 2) : null,
+                  border: isSelected
+                      ? Border.all(color: primaryColor, width: 2)
+                      : null,
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.account_balance, color: Colors.grey),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance,
+                        color: Colors.grey,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(bank['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text("+${formatRupiah((bank['fee'] as int).toDouble())}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text(
+                            bank['name'],
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            "+${formatRupiah((bank['fee'] as int).toDouble())}",
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    if (isSelected) const Icon(Icons.check_circle, color: Color(0xFF22c55e)),
+                    if (isSelected)
+                      const Icon(Icons.check_circle, color: Color(0xFF22c55e)),
                   ],
                 ),
               ),
@@ -508,13 +652,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // --- BOTTOM BAR ---
   Widget _buildBottomBar() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: SafeArea(
         child: Column(
@@ -534,17 +683,33 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Biaya Admin", style: TextStyle(color: Colors.grey)),
+                      const Text(
+                        "Biaya Admin",
+                        style: TextStyle(color: Colors.grey),
+                      ),
                       Text(formatRupiah(paymentFee)),
                     ],
                   ),
                 ),
-              const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider()),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("Total Bayar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text(formatRupiah(grandTotal), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: primaryColor)),
+                  const Text(
+                    "Total Bayar",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  Text(
+                    formatRupiah(grandTotal),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: primaryColor,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -562,11 +727,29 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: isLoading
-                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(currentStep == 1 ? "Pilih Pembayaran" : "Bayar Sekarang", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        currentStep == 1
+                            ? "Pilih Pembayaran"
+                            : "Bayar Sekarang",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -581,7 +764,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
       children: [
         Icon(icon, color: primaryColor, size: 18),
         const SizedBox(width: 12),
-        Expanded(child: Text(text, style: const TextStyle(fontSize: 14, color: Colors.black87))),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+        ),
       ],
     );
   }
@@ -590,8 +778,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal, color: isTotal ? Colors.black : Colors.grey[600], fontSize: isTotal ? 16 : 13)),
-        Text(formatRupiah(value), style: TextStyle(fontWeight: FontWeight.bold, fontSize: isTotal ? 16 : 13, color: isTotal ? primaryColor : Colors.black)),
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+            color: isTotal ? Colors.black : Colors.grey[600],
+            fontSize: isTotal ? 16 : 13,
+          ),
+        ),
+        Text(
+          formatRupiah(value),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: isTotal ? 16 : 13,
+            color: isTotal ? primaryColor : Colors.black,
+          ),
+        ),
       ],
     );
   }
