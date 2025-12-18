@@ -16,6 +16,7 @@ $name     = $data['name'] ?? '';
 $email    = $data['email'] ?? '';
 $password = $data['password'] ?? '';
 $phone    = $data['phone'] ?? ''; 
+$role = 'customer';
 
 if (empty($name) || empty($email) || empty($password)) {
     echo json_encode(["status" => "error", "message" => "Data tidak lengkap"]);
@@ -29,6 +30,7 @@ if ($check->num_rows > 0) {
 }
 
 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+$sql = "INSERT INTO users (name, email, password, role, phone) VALUES ('$name', '$email', '$hashed_password', '$role', '$phone')";
 $role = 'customer';
 
 $stmt = $conn->prepare("INSERT INTO users (name, email, password, role, phone) VALUES (?, ?, ?, ?, ?)");
