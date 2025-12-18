@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 18, 2025 at 10:20 AM
+-- Generation Time: Dec 18, 2025 at 11:31 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -24,12 +24,60 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `admin_settings`
+--
+
+CREATE TABLE `admin_settings` (
+  `id` int(11) NOT NULL,
+  `push_notif` tinyint(1) DEFAULT 1,
+  `auto_confirm` tinyint(1) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `admin_settings`
+--
+
+INSERT INTO `admin_settings` (`id`, `push_notif`, `auto_confirm`) VALUES
+(1, 1, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ads`
+--
+
+CREATE TABLE `ads` (
+  `id` int(11) NOT NULL,
+  `title` varchar(100) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `views` int(11) DEFAULT 0,
+  `clicks` int(11) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `ads`
+--
+
+INSERT INTO `ads` (`id`, `title`, `description`, `image_url`, `is_active`, `views`, `clicks`, `created_at`) VALUES
+(1, 'Promo Member Baru', 'Dapatkan diskon 50% untuk booking pertama!', 'promo_new.jpg', 1, 1500, 120, '2025-12-18 15:27:48'),
+(2, 'Flash Sale 12.12', 'Diskon kilat semua lapangan jam 12-14', 'promo_1212.jpg', 1, 2300, 450, '2025-12-18 15:27:48'),
+(3, 'Paket Hemat Weekend', 'Booking 2 jam gratis air mineral', 'promo_weekend.jpg', 0, 800, 30, '2025-12-18 15:27:48'),
+(4, 'Turnamen Futsal Cup', 'Daftarkan tim kamu sekarang!', 'promo_cup.jpg', 1, 5000, 890, '2025-12-18 15:27:48'),
+(5, 'Diskon Pelajar', 'Tunjukkan kartu pelajar, dapat diskon 20%', 'promo_student.jpg', 1, 600, 25, '2025-12-18 15:27:48');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `bookings`
 --
 
 CREATE TABLE `bookings` (
   `id` int(11) NOT NULL,
   `booking_code` varchar(50) DEFAULT NULL,
+  `booking_group_id` varchar(50) DEFAULT NULL,
   `field_id` int(11) DEFAULT NULL,
   `user_id` int(11) DEFAULT NULL,
   `booking_date` date NOT NULL,
@@ -37,41 +85,49 @@ CREATE TABLE `bookings` (
   `end_time` time NOT NULL,
   `status` enum('locked','booked','confirmed','completed','cancelled') DEFAULT 'booked',
   `total_price` decimal(10,2) DEFAULT 0.00,
+  `payment_token` varchar(255) DEFAULT NULL,
+  `payment_url` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `cancel_reason` varchar(255) DEFAULT NULL,
-  `payment_method` varchar(50) DEFAULT 'Transfer Bank'
+  `payment_method` varchar(50) DEFAULT 'Transfer Bank',
+  `locked_at` datetime DEFAULT NULL COMMENT 'Waktu user mulai klik slot',
+  `locked_expires_at` datetime DEFAULT NULL COMMENT 'Batas waktu lock (3 menit)',
+  `payment_proof` varchar(255) DEFAULT NULL COMMENT 'Bukti bayar',
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `bookings`
 --
 
-INSERT INTO `bookings` (`id`, `booking_code`, `field_id`, `user_id`, `booking_date`, `start_time`, `end_time`, `status`, `total_price`, `created_at`, `cancel_reason`, `payment_method`) VALUES
-(1, 'SA-20251215-0001', 4, 1, '2025-12-15', '06:00:00', '07:00:00', 'cancelled', 204000.00, '2025-12-15 14:52:02', NULL, 'Transfer Bank'),
-(2, 'SA-20251215-6111', 1, 1, '2025-12-15', '08:00:00', '09:00:00', 'cancelled', 154000.00, '2025-12-15 15:31:34', NULL, 'Transfer Bank'),
-(3, 'SA-20251216-5776', 2, 1, '2025-12-24', '08:00:00', '09:00:00', 'cancelled', 154000.00, '2025-12-16 09:06:38', NULL, 'Transfer Bank'),
-(4, 'SA-240701-001', 1, 1, '2024-07-10', '19:00:00', '20:00:00', 'completed', 120000.00, '2025-12-17 14:50:38', NULL, 'GoPay'),
-(5, 'SA-240705-002', 3, 2, '2024-07-15', '16:00:00', '18:00:00', 'completed', 120000.00, '2025-12-17 14:50:38', NULL, 'OVO'),
-(6, 'SA-240801-001', 1, 3, '2024-08-02', '18:00:00', '20:00:00', 'completed', 240000.00, '2025-12-17 14:50:38', NULL, 'Transfer Bank'),
-(7, 'SA-240805-002', 5, 4, '2024-08-12', '20:00:00', '22:00:00', 'completed', 400000.00, '2025-12-17 14:50:38', NULL, 'DANA'),
-(8, 'SA-240810-003', 3, 1, '2024-08-20', '10:00:00', '11:00:00', 'completed', 60000.00, '2025-12-17 14:50:38', NULL, 'GoPay'),
-(9, 'SA-240901-001', 2, 2, '2024-09-05', '19:00:00', '21:00:00', 'completed', 300000.00, '2025-12-17 14:50:38', NULL, 'OVO'),
-(10, 'SA-240905-002', 2, 5, '2024-09-12', '20:00:00', '22:00:00', 'completed', 300000.00, '2025-12-17 14:50:38', NULL, 'GoPay'),
-(11, 'SA-240910-003', 1, 1, '2024-09-15', '18:00:00', '19:00:00', 'completed', 120000.00, '2025-12-17 14:50:38', NULL, 'Transfer Bank'),
-(12, 'SA-240920-004', 4, 3, '2024-09-20', '15:00:00', '17:00:00', 'cancelled', 120000.00, '2025-12-17 14:50:38', NULL, 'DANA'),
-(13, 'SA-241001-001', 5, 4, '2024-10-01', '19:00:00', '21:00:00', 'completed', 400000.00, '2025-12-17 14:50:38', NULL, 'GoPay'),
-(14, 'SA-241005-002', 1, 2, '2024-10-05', '20:00:00', '21:00:00', 'completed', 120000.00, '2025-12-17 14:50:38', NULL, 'OVO'),
-(15, 'SA-241010-003', 6, 5, '2024-10-10', '08:00:00', '10:00:00', 'completed', 360000.00, '2025-12-17 14:50:38', NULL, 'Transfer Bank'),
-(16, 'SA-241015-004', 3, 1, '2024-10-15', '19:00:00', '20:00:00', 'completed', 60000.00, '2025-12-17 14:50:38', NULL, 'DANA'),
-(17, 'SA-241020-005', 2, 2, '2024-10-20', '21:00:00', '23:00:00', 'completed', 300000.00, '2025-12-17 14:50:38', NULL, 'GoPay'),
-(18, 'SA-241101-001', 1, 3, '2024-11-05', '17:00:00', '19:00:00', 'completed', 240000.00, '2025-12-17 14:50:38', NULL, 'OVO'),
-(19, 'SA-241110-002', 4, 4, '2024-11-12', '10:00:00', '12:00:00', 'completed', 120000.00, '2025-12-17 14:50:38', NULL, 'GoPay'),
-(20, 'SA-241120-003', 5, 5, '2024-11-25', '16:00:00', '18:00:00', 'confirmed', 400000.00, '2025-12-17 14:50:38', NULL, 'Transfer Bank'),
-(21, 'SA-241217-001', 1, 1, '2025-12-17', '19:00:00', '20:00:00', 'booked', 120000.00, '2025-12-17 14:50:38', NULL, 'GoPay'),
-(22, 'SA-241217-002', 3, 2, '2025-12-17', '20:00:00', '21:00:00', 'booked', 60000.00, '2025-12-17 14:50:38', NULL, 'OVO'),
-(23, 'SA-241218-003', 5, 4, '2025-12-18', '18:00:00', '20:00:00', 'confirmed', 400000.00, '2025-12-17 14:50:38', NULL, 'Transfer Bank'),
-(24, 'SA-241219-004', 2, 5, '2025-12-19', '21:00:00', '22:00:00', 'confirmed', 150000.00, '2025-12-17 14:50:38', NULL, 'DANA'),
-(25, 'SA-20251218-1465', 1, 1, '2025-12-19', '08:00:00', '09:00:00', 'booked', 150000.00, '2025-12-18 08:42:37', NULL, 'Transfer Bank');
+INSERT INTO `bookings` (`id`, `booking_code`, `booking_group_id`, `field_id`, `user_id`, `booking_date`, `start_time`, `end_time`, `status`, `total_price`, `payment_token`, `payment_url`, `created_at`, `cancel_reason`, `payment_method`, `locked_at`, `locked_expires_at`, `payment_proof`, `updated_at`) VALUES
+(1, 'SA-241218-001', NULL, 1, 2, '2025-12-18', '19:00:00', '20:00:00', 'booked', 120000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'GoPay', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(2, 'SA-241218-002', NULL, 4, 3, '2025-12-18', '20:00:00', '22:00:00', 'confirmed', 100000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'OVO', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(3, 'SA-241218-003', NULL, 6, 4, '2025-12-18', '16:00:00', '18:00:00', 'booked', 400000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'Transfer Bank', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(4, 'SA-241218-004', NULL, 2, 5, '2025-12-18', '10:00:00', '12:00:00', 'confirmed', 200000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'DANA', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(5, 'SA-WEEK-001', NULL, 2, 6, '2025-12-16', '18:00:00', '19:00:00', 'completed', 100000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'DANA', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(6, 'SA-WEEK-002', NULL, 1, 7, '2025-12-15', '20:00:00', '22:00:00', 'completed', 240000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'GoPay', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(7, 'SA-WEEK-003', NULL, 9, 8, '2025-12-17', '08:00:00', '10:00:00', 'cancelled', 900000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'Transfer Bank', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(8, 'SA-WEEK-004', NULL, 3, 9, '2025-12-14', '19:00:00', '21:00:00', 'completed', 220000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'OVO', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(9, 'SA-WEEK-005', NULL, 5, 10, '2025-12-13', '15:00:00', '17:00:00', 'completed', 90000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'Cash', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(10, 'SA-MTH-001', NULL, 7, 11, '2025-12-08', '10:00:00', '12:00:00', 'completed', 700000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'OVO', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(11, 'SA-MTH-002', NULL, 3, 12, '2025-12-06', '19:00:00', '20:00:00', 'completed', 110000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'GoPay', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(12, 'SA-MTH-003', NULL, 5, 13, '2025-12-03', '15:00:00', '16:00:00', 'completed', 45000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'Cash', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(13, 'SA-MTH-004', NULL, 1, 14, '2025-11-28', '21:00:00', '23:00:00', 'completed', 240000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'Transfer Bank', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(14, 'SA-MTH-005', NULL, 8, 15, '2025-11-26', '09:00:00', '11:00:00', 'completed', 300000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'DANA', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(15, 'SA-MTH-006', NULL, 2, 16, '2025-11-23', '18:00:00', '20:00:00', 'completed', 200000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'DANA', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(16, 'SA-LAST-001', NULL, 4, 17, '2025-11-13', '16:00:00', '17:00:00', 'completed', 50000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'GoPay', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(17, 'SA-LAST-002', NULL, 6, 18, '2025-11-10', '19:00:00', '21:00:00', 'completed', 400000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'Transfer Bank', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(18, 'SA-LAST-003', NULL, 9, 19, '2025-11-08', '08:00:00', '10:00:00', 'completed', 900000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'Transfer Bank', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(19, 'SA-LAST-004', NULL, 1, 20, '2025-11-03', '20:00:00', '22:00:00', 'completed', 240000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'GoPay', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(20, 'SA-LAST-005', NULL, 3, 21, '2025-10-29', '14:00:00', '16:00:00', 'completed', 220000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'OVO', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(21, 'SA-OLD-001', NULL, 2, 22, '2025-10-09', '18:00:00', '20:00:00', 'completed', 200000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'DANA', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(22, 'SA-OLD-002', NULL, 5, 23, '2025-10-04', '10:00:00', '11:00:00', 'completed', 45000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'Cash', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(23, 'SA-OLD-003', NULL, 7, 24, '2025-09-29', '20:00:00', '22:00:00', 'completed', 360000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'OVO', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(24, 'SA-OLD-004', NULL, 8, 25, '2025-09-19', '15:00:00', '17:00:00', 'completed', 300000.00, NULL, NULL, '2025-12-18 15:27:48', NULL, 'DANA', NULL, NULL, NULL, '2025-12-18 16:05:26'),
+(25, 'SA-20251219-6356', NULL, 1, 1, '2025-12-19', '21:00:00', '22:00:00', 'booked', 120000.00, NULL, NULL, '2025-12-18 17:49:07', NULL, 'Transfer Bank', NULL, NULL, NULL, '2025-12-18 17:49:07'),
+(26, 'SA-20251219-8919', NULL, 1, 1, '2025-12-19', '08:00:00', '09:00:00', 'booked', 120000.00, NULL, NULL, '2025-12-18 21:43:41', NULL, 'Transfer Bank', NULL, NULL, NULL, '2025-12-18 21:43:41'),
+(27, 'SA-20251219-9777', NULL, 1, 32, '2025-12-19', '09:00:00', '10:00:00', 'booked', 120000.00, NULL, NULL, '2025-12-18 22:07:13', NULL, 'dana', NULL, NULL, NULL, '2025-12-18 22:07:13');
 
 -- --------------------------------------------------------
 
@@ -94,23 +150,30 @@ CREATE TABLE `fields` (
 --
 
 INSERT INTO `fields` (`id`, `venue_id`, `name`, `sport_type`, `price_per_hour`, `facilities`, `image_url`) VALUES
-(1, 1, 'Lapangan Futsal A', 'futsal', 150000.00, 'AC,Locker,Shower', 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6'),
-(2, 1, 'Lapangan Futsal B', 'futsal', 150000.00, 'AC,Locker', 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6'),
-(3, 1, 'Court Badminton 1', 'badminton', 80000.00, 'AC,Locker', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFaUqXOZ2B9GE4VxE1oU2Ej1bFHoEbplBpVw&s'),
-(4, 1, 'Basketball Hall', 'basketball', 200000.00, 'Tribun,Scoreboard', 'https://images.unsplash.com/photo-1504450758481-7338eba7524a'),
-(5, 2, 'Vinyl Pitch 1', 'futsal', 120000.00, 'Kantin,WiFi', 'https://images.unsplash.com/photo-1574629810360-7efbbe195018'),
-(6, 2, 'Syntethic Pitch 2', 'futsal', 110000.00, 'WiFi', 'https://images.unsplash.com/photo-1574629810360-7efbbe195018'),
-(7, 3, 'Tennis Court A', 'tennis', 180000.00, 'Outdoor,Locker', 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0'),
-(8, 3, 'Volley Court 1', 'volleyball', 100000.00, 'Indoor', 'https://images.unsplash.com/photo-1612872087720-48ca45b08811'),
-(9, 4, 'Court A', 'badminton', 75000.00, 'Parkir Luas', 'https://images.unsplash.com/photo-1626224583764-84786c713cd3'),
-(10, 4, 'Court B', 'badminton', 75000.00, 'Parkir Luas', 'https://images.unsplash.com/photo-1626224583764-84786c713cd3'),
-(11, 5, 'Main Court', 'basketball', 250000.00, 'Premium Floor,AC', 'https://images.unsplash.com/photo-1504450758481-7338eba7524a'),
-(12, NULL, 'Lapangan Futsal A (Vinyl)', 'Futsal', 120000.00, NULL, 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6'),
-(13, NULL, 'Lapangan Futsal B (Rumput)', 'Futsal', 150000.00, NULL, 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6'),
-(14, NULL, 'Badminton Court 1', 'Badminton', 60000.00, NULL, 'https://images.unsplash.com/photo-1626224583764-847649623d9c'),
-(15, NULL, 'Badminton Court 2', 'Badminton', 60000.00, NULL, 'https://images.unsplash.com/photo-1626224583764-847649623d9c'),
-(16, NULL, 'Basketball Hall', 'Basketball', 200000.00, NULL, 'https://images.unsplash.com/photo-1546519638-68e109498ee3'),
-(17, NULL, 'Tennis Court Premium', 'Tennis', 180000.00, NULL, 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0');
+(1, 1, 'Lapangan A (Rumput Sintetis)', 'Futsal', 120000.00, NULL, 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=800&auto=format&fit=crop'),
+(2, 1, 'Lapangan B (Vinyl)', 'Futsal', 100000.00, NULL, 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=800&auto=format&fit=crop'),
+(3, 1, 'Lapangan C (Interlock)', 'Futsal', 110000.00, NULL, 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=800&auto=format&fit=crop'),
+(4, 2, 'Court 1 (Karpet Standar)', 'Badminton', 50000.00, NULL, 'https://images.unsplash.com/photo-1613918108466-292b78a8ef95?q=80&w=800&auto=format&fit=crop'),
+(5, 2, 'Court 2 (Lantai Kayu)', 'Badminton', 45000.00, NULL, 'https://images.unsplash.com/photo-1613918108466-292b78a8ef95?q=80&w=800&auto=format&fit=crop'),
+(6, 2, 'Main Hall Basket', 'Basketball', 200000.00, NULL, 'https://images.unsplash.com/photo-1546519638-68e109498ee3'),
+(7, 3, 'Kolam Renang Olympic', 'Swimming', 50000.00, NULL, 'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7'),
+(8, 3, 'Tennis Court A', 'Tennis', 150000.00, NULL, 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0'),
+(9, 6, 'Indoor Court A', 'Basketball', 350000.00, NULL, 'https://images.unsplash.com/photo-1504450758481-7338eba7524a'),
+(10, 6, 'Outdoor Court B', 'Basketball', 150000.00, NULL, 'https://images.unsplash.com/photo-1519861531473-9200262188bf'),
+(11, 7, 'VIP Futsal 1', 'Futsal', 180000.00, NULL, 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=800&auto=format&fit=crop'),
+(12, 7, 'VIP Futsal 2', 'Futsal', 180000.00, NULL, 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=800&auto=format&fit=crop'),
+(13, 7, 'Regular Futsal', 'Futsal', 130000.00, NULL, 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=800&auto=format&fit=crop'),
+(14, 11, 'Mini Soccer 1', 'Mini Soccer', 450000.00, NULL, 'https://images.unsplash.com/photo-1551958219-acbc608c6377'),
+(15, 11, 'Mini Soccer 2', 'Mini Soccer', 450000.00, NULL, 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d'),
+(16, 4, 'Lapangan Utama Setia Budi Court', 'Tennis, Badminton', 85000.00, NULL, 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?q=80&w=800'),
+(17, 5, 'Lapangan Utama Tuntungan Futsal', 'Futsal', 85000.00, NULL, 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=800&auto=format&fit=crop'),
+(18, 8, 'Lapangan Utama Kelapa Gading Badminton', 'Badminton', 85000.00, NULL, 'https://images.unsplash.com/photo-1613918108466-292b78a8ef95?q=80&w=800&auto=format&fit=crop'),
+(19, 9, 'Lapangan Utama GBK Tennis Outdoor', 'Tennis', 85000.00, NULL, 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=800&auto=format&fit=crop'),
+(20, 10, 'Lapangan Utama Kebon Jeruk Sport', 'Futsal, Badminton', 85000.00, NULL, 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?q=80&w=800'),
+(21, 12, 'Lapangan Utama Dago Atas Gym & Sport', 'Gym, Basketball', 85000.00, NULL, 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?q=80&w=800'),
+(22, 13, 'Lapangan Utama Gor C-Tra Arena', 'Basketball', 85000.00, NULL, 'https://images.unsplash.com/photo-1546519638-68e109498ee2?q=80&w=800&auto=format&fit=crop'),
+(23, 14, 'Lapangan Utama Surabaya Sport Center', 'Badminton, Futsal', 85000.00, NULL, 'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?q=80&w=800'),
+(24, 15, 'Lapangan Utama Graha Futsal Family', 'Futsal', 85000.00, NULL, 'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?q=80&w=800&auto=format&fit=crop');
 
 -- --------------------------------------------------------
 
@@ -128,12 +191,20 @@ CREATE TABLE `notifications` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
 --
--- Dumping data for table `notifications`
+-- Table structure for table `promo_codes`
 --
 
-INSERT INTO `notifications` (`id`, `user_id`, `category`, `title`, `message`, `is_read`, `created_at`) VALUES
-(1, 1, 'system', 'Selamat Datang!', 'Akun Anda berhasil dibuat. Nikmati kemudahan booking lapangan.', 0, '2025-12-17 16:25:38');
+CREATE TABLE `promo_codes` (
+  `id` int(11) NOT NULL,
+  `code` varchar(20) DEFAULT NULL,
+  `discount_amount` decimal(10,2) DEFAULT NULL,
+  `usage_limit` int(11) DEFAULT 100,
+  `used_count` int(11) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -156,8 +227,12 @@ CREATE TABLE `reviews` (
 --
 
 INSERT INTO `reviews` (`id`, `user_id`, `venue_name`, `sport_type`, `rating`, `comment`, `created_at`) VALUES
-(1, 1, 'Lapangan Futsal Galaxy', 'Futsal', 5, 'Rumput sintetisnya mantap, ga licin.', '2025-12-17 23:49:13'),
-(2, 1, 'GOR Badminton Sentral', 'Badminton', 4, 'Lampu terang, tapi agak panas.', '2025-12-17 23:49:13');
+(1, 2, 'Galaxy Futsal Arena', 'Futsal', 5, 'Rumputnya bagus banget, sepatu jadi enak dipake.', '2025-12-18 22:27:48'),
+(2, 3, 'Gor Angsapura', 'Badminton', 4, 'Lapangan oke, tapi agak panas dikit AC-nya.', '2025-12-18 22:27:48'),
+(3, 5, 'Cilandak Town Futsal', 'Futsal', 5, 'Lokasi strategis, fasilitas lengkap ada shower air panas.', '2025-12-18 22:27:48'),
+(4, 6, 'Senayan Basket Hall', 'Basketball', 5, 'Lantai kayunya standar internasional, mantap!', '2025-12-18 22:27:48'),
+(5, 10, 'Siliwangi Soccer Field', 'Mini Soccer', 5, 'Best mini soccer in Bandung!', '2025-12-18 22:27:48'),
+(6, 12, 'Dago Atas Gym', 'Gym', 4, 'Alat lengkap, view nya bagus.', '2025-12-18 22:27:48');
 
 -- --------------------------------------------------------
 
@@ -199,15 +274,38 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`, `phone`, `created_at`, `status`, `photo_profile`, `points`) VALUES
 (1, 'Admin Sport', 'admin@arena.com', '$2a$12$mrtvQanLmP6TP.YPnLh7e.TUF8mVcFQTINGQpeu4LdlIxBlPf6cUS', 'admin', NULL, '2025-12-15 10:22:57', 'active', NULL, 1550),
-(2, 'Ahmad Fulan', 'fulan@arena.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'customer', NULL, '2025-12-15 10:22:57', 'active', NULL, 0),
-(3, '1', '1', '$2y$10$KpANdqucmtHz1.EByVR3nu.1.YYgvUMY7hRoBe.2UZIIBp1ebEu.C', 'customer', NULL, '2025-12-15 10:23:36', 'active', 'uploads/profile_3_1766047325.jpg', 0),
-(5, 'Ahmad Rizki', 'ahmad@email.com', '$2y$10$dummyhash', 'customer', '081234567890', '2025-12-17 14:50:38', 'active', NULL, 0),
-(6, 'Budi Santoso', 'budi@email.com', '$2y$10$dummyhash', 'customer', '081298765432', '2025-12-17 14:50:38', 'active', NULL, 0),
-(7, 'Citra Dewi', 'citra@email.com', '$2y$10$dummyhash', 'customer', '081345678901', '2025-12-17 14:50:38', 'banned', NULL, 0),
-(8, 'Dani Pratama', 'dani@email.com', '$2y$10$dummyhash', 'customer', '081456789012', '2025-12-17 14:50:38', 'active', NULL, 0),
-(9, 'Eka Putri', 'eka@email.com', '$2y$10$dummyhash', 'customer', '081567890123', '2025-12-17 14:50:38', 'active', NULL, 0),
-(10, '', '', '$2y$10$WsyI7ZNKWS84J38TVxKOfu37SnRu0L/UxJYJzZy1m391aJi7m9FeG', 'customer', '', '2025-12-18 08:52:48', 'active', NULL, 0),
-(11, 'Gabriel Glenn Peter Pardede', 'gabzy@gmail.com', '$2y$10$tVznjmO0B210pHdDx.HbjeaSr8ALUQg8pg1AwHjKMFIS1msVOsUw2', 'customer', '08311877712', '2025-12-18 09:00:10', 'active', NULL, 0);
+(2, 'Raffi Ahmad', 'raffi@email.com', '$2y$10$dummyhash', 'customer', '08123456001', '2025-12-18 15:27:48', 'active', NULL, 5000),
+(3, 'Nagita Slavina', 'gigi@email.com', '$2y$10$dummyhash', 'customer', '08123456002', '2025-12-18 15:27:48', 'active', NULL, 4500),
+(4, 'Deddy Corbuzier', 'deddy@email.com', '$2y$10$dummyhash', 'customer', '08123456003', '2025-12-18 15:27:48', 'active', NULL, 2100),
+(5, 'Jerome Polin', 'jerome@email.com', '$2y$10$dummyhash', 'customer', '08123456004', '2025-12-18 15:27:48', 'active', NULL, 1200),
+(6, 'Maudy Ayunda', 'maudy@email.com', '$2y$10$dummyhash', 'customer', '08123456005', '2025-12-18 15:27:48', 'active', NULL, 3000),
+(7, 'Reza Rahadian', 'reza@email.com', '$2y$10$dummyhash', 'customer', '08123456006', '2025-12-18 15:27:48', 'active', NULL, 800),
+(8, 'Anya Geraldine', 'anya@email.com', '$2y$10$dummyhash', 'customer', '08123456007', '2025-12-18 15:27:48', 'active', NULL, 150),
+(9, 'Fadly Faisal', 'fadly@email.com', '$2y$10$dummyhash', 'customer', '08123456008', '2025-12-18 15:27:48', 'active', NULL, 450),
+(10, 'Fuji An', 'fuji@email.com', '$2y$10$dummyhash', 'customer', '08123456009', '2025-12-18 15:27:48', 'active', NULL, 600),
+(11, 'Thariq Halilintar', 'thariq@email.com', '$2y$10$dummyhash', 'customer', '08123456010', '2025-12-18 15:27:48', 'active', NULL, 900),
+(12, 'Atta Halilintar', 'atta@email.com', '$2y$10$dummyhash', 'customer', '08123456011', '2025-12-18 15:27:48', 'active', NULL, 3500),
+(13, 'Aurel Hermansyah', 'aurel@email.com', '$2y$10$dummyhash', 'customer', '08123456012', '2025-12-18 15:27:48', 'active', NULL, 2000),
+(14, 'Lyodra Ginting', 'lyodra@email.com', '$2y$10$dummyhash', 'customer', '08123456013', '2025-12-18 15:27:48', 'active', NULL, 750),
+(15, 'Mahalini Raharja', 'mahalini@email.com', '$2y$10$dummyhash', 'customer', '08123456014', '2025-12-18 15:27:48', 'active', NULL, 600),
+(16, 'Rizky Febian', 'rizky@email.com', '$2y$10$dummyhash', 'customer', '08123456015', '2025-12-18 15:27:48', 'active', NULL, 1100),
+(17, 'Tiara Andini', 'tiara@email.com', '$2y$10$dummyhash', 'customer', '08123456016', '2025-12-18 15:27:48', 'banned', NULL, 0),
+(18, 'Jefri Nichol', 'jefri@email.com', '$2y$10$dummyhash', 'customer', '08123456017', '2025-12-18 15:27:48', 'active', NULL, 90),
+(19, 'Iqbaal Ramadhan', 'iqbaal@email.com', '$2y$10$dummyhash', 'customer', '08123456018', '2025-12-18 15:27:48', 'active', NULL, 4500),
+(20, 'Angga Yunanda', 'angga@email.com', '$2y$10$dummyhash', 'customer', '08123456019', '2025-12-18 15:27:48', 'active', NULL, 1200),
+(21, 'Shenina Cinnamon', 'shenina@email.com', '$2y$10$dummyhash', 'customer', '08123456020', '2025-12-18 15:27:48', 'active', NULL, 350),
+(22, 'Chicco Jerikho', 'chicco@email.com', '$2y$10$dummyhash', 'customer', '08123456021', '2025-12-18 15:27:48', 'active', NULL, 500),
+(23, 'Putri Marino', 'putri@email.com', '$2y$10$dummyhash', 'customer', '08123456022', '2025-12-18 15:27:48', 'active', NULL, 400),
+(24, 'Rio Dewanto', 'rio@email.com', '$2y$10$dummyhash', 'customer', '08123456023', '2025-12-18 15:27:48', 'active', NULL, 650),
+(25, 'Atiqah Hasiholan', 'atiqah@email.com', '$2y$10$dummyhash', 'customer', '08123456024', '2025-12-18 15:27:48', 'active', NULL, 300),
+(26, 'Vino G Bastian', 'vino@email.com', '$2y$10$dummyhash', 'customer', '08123456025', '2025-12-18 15:27:48', 'active', NULL, 800),
+(27, 'Marsha Timothy', 'marsha@email.com', '$2y$10$dummyhash', 'customer', '08123456026', '2025-12-18 15:27:48', 'active', NULL, 700),
+(28, 'Adipati Dolken', 'adipati@email.com', '$2y$10$dummyhash', 'customer', '08123456027', '2025-12-18 15:27:48', 'active', NULL, 200),
+(29, 'Vanesha Prescilla', 'sasha@email.com', '$2y$10$dummyhash', 'customer', '08123456028', '2025-12-18 15:27:48', 'active', NULL, 250),
+(30, 'Bryan Domani', 'bryan@email.com', '$2y$10$dummyhash', 'customer', '08123456029', '2025-12-18 15:27:48', 'active', NULL, 350),
+(31, 'Megan Domani', 'megan@email.com', '$2y$10$dummyhash', 'customer', '08123456030', '2025-12-18 15:27:48', 'active', NULL, 450),
+(32, 'Gabriel Pardede', 'gabzy@gmail.com', '$2y$10$yDSd8Y8oj2UKUYvhMvKwcOjBMYqnuraJ2hpN7Tlc6rKoV5gFCtCqq', 'customer', '08311877712', '2025-12-18 16:14:06', 'active', 'uploads/profile_32_1766089314.jpg', 0),
+(33, 'Gabriel Pardede', 'gabzygl@gmail.com', '$2y$10$nKf2KgWBPuhcqIntrHIeieFc1Qu.Y4AZoFHM6B2F.WyPnffVLlN4i', 'customer', '08311877712', '2025-12-18 17:32:44', 'active', NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -222,19 +320,33 @@ CREATE TABLE `venues` (
   `image_url` text DEFAULT NULL,
   `open_time` time DEFAULT NULL,
   `close_time` time DEFAULT NULL,
-  `rating` decimal(2,1) DEFAULT NULL
+  `rating` decimal(2,1) DEFAULT NULL,
+  `latitude` double DEFAULT NULL,
+  `longitude` double DEFAULT NULL,
+  `city` varchar(50) DEFAULT NULL,
+  `sport_type` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `venues`
 --
 
-INSERT INTO `venues` (`id`, `name`, `address`, `image_url`, `open_time`, `close_time`, `rating`) VALUES
-(1, 'Arena Sport Center', 'Jl. Sudirman No. 123, Jakarta Selatan', 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8', '06:00:00', '23:00:00', 4.8),
-(2, 'Galaxy Futsal Arena', 'Jl. Tebet Raya No. 45, Jakarta Selatan', 'https://images.unsplash.com/photo-1574629810360-7efbbe195018', '08:00:00', '23:00:00', 4.6),
-(3, 'Champion Sports Hub', 'Jl. Gatot Subroto No. 88, Jakarta Pusat', 'https://images.unsplash.com/photo-1626224583764-84786c713cd3', '07:00:00', '22:00:00', 4.9),
-(4, 'Bugar Badminton Hall', 'Jl. Panjang No. 12, Jakarta Barat', 'https://plus.unsplash.com/premium_photo-1678743681408-7243cb3b5668', '08:00:00', '22:00:00', 4.5),
-(5, 'Pro Basket Court', 'Jl. Kemang Raya, Jakarta Selatan', 'https://images.unsplash.com/photo-1504450758481-7338eba7524a', '09:00:00', '22:00:00', 4.7);
+INSERT INTO `venues` (`id`, `name`, `address`, `image_url`, `open_time`, `close_time`, `rating`, `latitude`, `longitude`, `city`, `sport_type`) VALUES
+(1, 'Galaxy Futsal Arena', 'Jl. Dr. Mansyur No. 88, Medan Baru', 'https://images.unsplash.com/photo-1552667466-07770ae110d0?q=80&w=800&auto=format&fit=crop', NULL, NULL, 4.8, 3.5689, 98.6543, 'Medan', 'Futsal'),
+(2, 'Gor Angsapura', 'Jl. Logam No. 12, Medan Area', 'https://static.wixstatic.com/media/131e07_39dcb25553514393b85f178c531325c7~mv2.jpg/v1/fill/w_800,h_600,al_c,q_85/131e07_39dcb25553514393b85f178c531325c7~mv2.jpg', NULL, NULL, 4.5, 3.5852, 98.6756, 'Medan', 'Badminton, Basketball'),
+(3, 'Cemara Sport Center', 'Komp. Cemara Asri, Percut Sei Tuan', 'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7', NULL, NULL, 4.7, 3.6367, 98.7042, 'Medan', 'Swimming, Tennis'),
+(4, 'Setia Budi Court', 'Jl. Setia Budi No. 45, Medan Sunggal', 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0', NULL, NULL, 4.6, 3.5789, 98.6321, 'Medan', 'Tennis, Badminton'),
+(5, 'Tuntungan Futsal', 'Jl. Jamin Ginting Km 12', 'https://images.unsplash.com/photo-1552667466-07770ae110d0?q=80&w=800&auto=format&fit=crop', NULL, NULL, 4.2, 3.5112, 98.6123, 'Medan', 'Futsal'),
+(6, 'Senayan Basket Hall', 'Gelora Bung Karno, Jakarta Pusat', 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=800&auto=format&fit=crop', NULL, NULL, 4.9, -6.2183, 106.8026, 'Jakarta', 'Basketball'),
+(7, 'Cilandak Town Futsal', 'Citos, Jakarta Selatan', 'https://images.unsplash.com/photo-1552667466-07770ae110d0?q=80&w=800&auto=format&fit=crop', NULL, NULL, 4.4, -6.2912, 106.8011, 'Jakarta', 'Futsal'),
+(8, 'Kelapa Gading Badminton', 'Jl. Boulevard Raya, Jakarta Utara', 'https://asset.ayo.co.id/image/venue/173201071917732.image_cropper_1732010692059_large.jpg', NULL, NULL, 4.3, -6.1592, 106.9065, 'Jakarta', 'Badminton'),
+(9, 'GBK Tennis Outdoor', 'Jl. Pintu Satu Senayan, Jakarta Pusat', 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6', NULL, NULL, 4.8, -6.2145, 106.8001, 'Jakarta', 'Tennis'),
+(10, 'Kebon Jeruk Sport', 'Jl. Panjang No. 5, Jakarta Barat', 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8', NULL, NULL, 4.5, -6.1923, 106.7721, 'Jakarta', 'Futsal, Badminton'),
+(11, 'Siliwangi Soccer Field', 'Jl. Lombok, Bandung Wetan', 'https://images.unsplash.com/photo-1551958219-acbc608c6377', NULL, NULL, 4.7, -6.9098, 107.6163, 'Bandung', 'Mini Soccer, Futsal'),
+(12, 'Dago Atas Gym & Sport', 'Jl. Dago Pakar, Coblong', 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48', NULL, NULL, 4.5, -6.8845, 107.6136, 'Bandung', 'Gym, Basketball'),
+(13, 'Gor C-Tra Arena', 'Jl. Cikutra, Bandung', 'https://images.unsplash.com/photo-1505666287802-931dc83948e9', NULL, NULL, 4.6, -6.9034, 107.6432, 'Bandung', 'Basketball'),
+(14, 'Surabaya Sport Center', 'Jl. Kertajaya, Gubeng', 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b', NULL, NULL, 4.6, -7.2798, 112.7689, 'Surabaya', 'Badminton, Futsal'),
+(15, 'Graha Futsal Family', 'Jl. Mayjen Sungkono, Dukuh Pakis', 'https://images.unsplash.com/photo-1552667466-07770ae110d0?q=80&w=800&auto=format&fit=crop', NULL, NULL, 4.2, -7.2912, 112.7231, 'Surabaya', 'Futsal');
 
 -- --------------------------------------------------------
 
@@ -247,10 +359,14 @@ CREATE TABLE `view_venue_details` (
 ,`name` varchar(100)
 ,`address` text
 ,`image_url` text
-,`rating` decimal(2,1)
 ,`open_time` time
 ,`close_time` time
-,`sport_type` mediumtext
+,`rating` decimal(2,1)
+,`latitude` double
+,`longitude` double
+,`city` varchar(50)
+,`sport_type` varchar(255)
+,`total_fields` bigint(21)
 ,`min_price` decimal(10,2)
 );
 
@@ -261,18 +377,32 @@ CREATE TABLE `view_venue_details` (
 --
 DROP TABLE IF EXISTS `view_venue_details`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_venue_details`  AS SELECT `v`.`id` AS `id`, `v`.`name` AS `name`, `v`.`address` AS `address`, `v`.`image_url` AS `image_url`, `v`.`rating` AS `rating`, `v`.`open_time` AS `open_time`, `v`.`close_time` AS `close_time`, group_concat(distinct `f`.`sport_type` separator ',') AS `sport_type`, min(`f`.`price_per_hour`) AS `min_price` FROM (`venues` `v` left join `fields` `f` on(`v`.`id` = `f`.`venue_id`)) GROUP BY `v`.`id` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_venue_details`  AS SELECT `v`.`id` AS `id`, `v`.`name` AS `name`, `v`.`address` AS `address`, `v`.`image_url` AS `image_url`, `v`.`open_time` AS `open_time`, `v`.`close_time` AS `close_time`, `v`.`rating` AS `rating`, `v`.`latitude` AS `latitude`, `v`.`longitude` AS `longitude`, `v`.`city` AS `city`, `v`.`sport_type` AS `sport_type`, (select count(0) from `fields` `f` where `f`.`venue_id` = `v`.`id`) AS `total_fields`, (select min(`f`.`price_per_hour`) from `fields` `f` where `f`.`venue_id` = `v`.`id`) AS `min_price` FROM `venues` AS `v` ;
 
 --
 -- Indexes for dumped tables
 --
 
 --
+-- Indexes for table `admin_settings`
+--
+ALTER TABLE `admin_settings`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `ads`
+--
+ALTER TABLE `ads`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `bookings`
 --
 ALTER TABLE `bookings`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `field_id` (`field_id`);
+  ADD KEY `field_id` (`field_id`),
+  ADD KEY `idx_booking_date_field` (`booking_date`,`field_id`),
+  ADD KEY `idx_booking_status` (`status`);
 
 --
 -- Indexes for table `fields`
@@ -287,6 +417,13 @@ ALTER TABLE `fields`
 ALTER TABLE `notifications`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `promo_codes`
+--
+ALTER TABLE `promo_codes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `code` (`code`);
 
 --
 -- Indexes for table `reviews`
@@ -319,28 +456,40 @@ ALTER TABLE `venues`
 --
 
 --
+-- AUTO_INCREMENT for table `ads`
+--
+ALTER TABLE `ads`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `fields`
 --
 ALTER TABLE `fields`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `promo_codes`
+--
+ALTER TABLE `promo_codes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `reviews`
 --
 ALTER TABLE `reviews`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `saved_payment_methods`
@@ -352,13 +501,13 @@ ALTER TABLE `saved_payment_methods`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT for table `venues`
 --
 ALTER TABLE `venues`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- Constraints for dumped tables
