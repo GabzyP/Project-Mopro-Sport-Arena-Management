@@ -26,13 +26,23 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
   void _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     final uid = prefs.getString('userId');
-    if (uid != null) {
+
+    print("DEBUG: Sedang mengambil booking untuk User ID: $uid");
+
+    if (uid != null && uid.isNotEmpty) {
       final data = await ApiService.getUserBookings(uid);
-      if (mounted)
+
+      print("DEBUG: Jumlah data ditemukan: ${data.length}");
+
+      if (mounted) {
         setState(() {
           allBookings = data;
           isLoading = false;
         });
+      }
+    } else {
+      print("DEBUG: User ID kosong/null. Pastikan sudah Login.");
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -101,7 +111,9 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
     Color statusBg;
     String statusText;
 
-    switch (item['status']) {
+    String status = (item['status'] ?? '').toString().toLowerCase();
+
+    switch (status) {
       case 'booked':
         statusColor = Colors.orange;
         statusBg = Colors.orange.shade50;
@@ -117,11 +129,23 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
         statusBg = Colors.green.shade50;
         statusText = "Selesai";
         break;
-      default:
+      case 'cancelled':
         statusColor = Colors.red;
         statusBg = Colors.red.shade50;
         statusText = "Dibatalkan";
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusBg = Colors.grey.shade50;
+        statusText = status;
     }
+
+    String fieldName = item['field_name'] ?? item['venue_name'] ?? 'Lapangan';
+    String sportType = item['sport_type'] ?? 'Umum';
+    String date = item['booking_date'] ?? '';
+    String startTime = item['start_time'] ?? '00:00:00';
+
+    double price = double.tryParse(item['total_price'].toString()) ?? 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -163,7 +187,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                       children: [
                         Expanded(
                           child: Text(
-                            item['field_name'],
+                            fieldName,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -192,7 +216,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      item['sport_type'],
+                      sportType,
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     const SizedBox(height: 8),
@@ -205,7 +229,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          item['booking_date'],
+                          date,
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -219,7 +243,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          item['start_time'].toString().substring(0, 5),
+                          startTime.substring(0, 5),
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -244,13 +268,13 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen>
                   locale: 'id_ID',
                   symbol: 'Rp ',
                   decimalDigits: 0,
-                ).format(double.parse(item['total_price'])),
+                ).format(price),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF22c55e),
                 ),
               ),
-              if (item['status'] == 'completed')
+              if (status == 'completed')
                 SizedBox(
                   height: 32,
                   child: OutlinedButton(

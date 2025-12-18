@@ -93,27 +93,33 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> createBooking({
+    required String userId,
     required String fieldId,
     required String date,
-    required List<String> slots,
+    required String startTime,
+    required String endTime,
     required double totalPrice,
+    required String paymentMethod,
   }) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/create_booking.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
+          'user_id': userId,
           'field_id': fieldId,
-          'date': date,
-          'slots': slots,
+          'booking_date': date,
+          'start_time': startTime,
+          'end_time': endTime,
           'total_price': totalPrice,
+          'payment_method': paymentMethod,
         }),
       );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
-      return {"status": "error", "message": "Gagal menghubungi server"};
+      return {"status": "error", "message": "Gagal koneksi server"};
     } catch (e) {
       return {"status": "error", "message": e.toString()};
     }
@@ -285,9 +291,13 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/get_user_bookings.php?user_id=$userId'),
       );
-      if (response.statusCode == 200) return json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
       return [];
     } catch (e) {
+      print("Error User Bookings: $e");
       return [];
     }
   }

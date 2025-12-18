@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/api_service.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
   const PaymentMethodScreen({super.key});
@@ -9,45 +11,51 @@ class PaymentMethodScreen extends StatefulWidget {
 
 class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   final Color primaryColor = const Color(0xFF22c55e);
+  bool isLoading = true;
 
-  // --- MOCK DATA (Data Dumy Sesuai Gambar) ---
-  List<Map<String, dynamic>> eWallets = [
-    {
-      'id': 'gopay',
-      'name': 'GoPay',
-      'icon': Icons.account_balance_wallet, // Placeholder icon
-      'color': Colors.green,
-      'number': '****8842',
-      'isMain': true, // Status "Utama"
-    },
-    {
-      'id': 'ovo',
-      'name': 'OVO',
-      'icon': Icons.monetization_on, // Placeholder icon
-      'color': Colors.purple,
-      'number': '****1234',
-      'isMain': false,
-    },
-  ];
+  List<dynamic> eWallets = [];
+  List<dynamic> banks = [];
 
-  List<Map<String, dynamic>> banks = [
-    {
-      'id': 'bca',
-      'name': 'BCA',
-      'icon': Icons.account_balance,
-      'color': Colors.blue,
-      'number': '****5678',
-      'isMain': false,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadMethods();
+  }
 
-  // Fungsi Menghapus Metode Pembayaran
+  void _loadMethods() async {
+    final prefs = await SharedPreferences.getInstance();
+    final uid = prefs.getString('userId');
+    if (uid != null) {
+      final data = await ApiService.getSavedPaymentMethods(uid);
+
+      if (mounted) {
+        setState(() {
+          eWallets = [];
+          banks = [];
+
+          for (var item in data) {
+            if (item['type'] == 'wallet' || item['type'] == 'ewallet') {
+              eWallets.add(item);
+            } else {
+              banks.add(item);
+            }
+          }
+          isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
   void _deleteMethod(String type, int index) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Hapus Metode?"),
-        content: const Text("Anda yakin ingin menghapus metode pembayaran ini?"),
+        content: const Text(
+          "Anda yakin ingin menghapus metode pembayaran ini?",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -91,98 +99,110 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // TOMBOL TAMBAH (Outline Green)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Navigasi ke halaman tambah kartu
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Fitur Tambah Kartu akan segera hadir")),
-                  );
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text("Tambah Metode Pembayaran"),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: primaryColor,
-                  side: BorderSide(color: primaryColor),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // SECTION E-WALLET
-            _buildSectionHeader(Icons.phone_android, "E-Wallet"),
-            const SizedBox(height: 12),
-            if (eWallets.isEmpty) _buildEmptyState(),
-            ...eWallets.asMap().entries.map((entry) {
-              return _buildCardItem(entry.value, 'wallet', entry.key);
-            }),
-
-            const SizedBox(height: 24),
-
-            // SECTION TRANSFER BANK
-            _buildSectionHeader(Icons.account_balance, "Transfer Bank"),
-            const SizedBox(height: 12),
-            if (banks.isEmpty) _buildEmptyState(),
-            ...banks.asMap().entries.map((entry) {
-              return _buildCardItem(entry.value, 'bank', entry.key);
-            }),
-
-            const SizedBox(height: 24),
-
-            // FOOTER INFO KEAMANAN
-            Container(
+      body: isLoading
+          ? Center(child: CircularProgressIndicator(color: primaryColor))
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6), // Warna abu-abu muda
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
-              ),
-              child: Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.credit_card, color: Colors.grey.shade600, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "Fitur Tambah Kartu akan segera hadir",
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text("Tambah Metode Pembayaran"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: primaryColor,
+                        side: BorderSide(color: primaryColor),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionHeader(Icons.phone_android, "E-Wallet"),
+                  const SizedBox(height: 12),
+                  if (eWallets.isEmpty) _buildEmptyState(),
+                  ...eWallets.asMap().entries.map((entry) {
+                    return _buildCardItem(entry.value, 'wallet', entry.key);
+                  }),
+
+                  const SizedBox(height: 24),
+
+                  _buildSectionHeader(Icons.account_balance, "Transfer Bank"),
+                  const SizedBox(height: 12),
+                  if (banks.isEmpty) _buildEmptyState(),
+                  ...banks.asMap().entries.map((entry) {
+                    return _buildCardItem(entry.value, 'bank', entry.key);
+                  }),
+
+                  const SizedBox(height: 24),
+
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.grey.shade300,
+                        style: BorderStyle.solid,
+                      ),
+                    ),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "Metode pembayaran aman",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: Colors.grey.shade800,
-                          ),
+                        Icon(
+                          Icons.credit_card,
+                          color: Colors.grey.shade600,
+                          size: 20,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Data kartu dan akun Anda terenkripsi dan aman. Kami tidak menyimpan informasi sensitif.",
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Metode pembayaran aman",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Colors.grey.shade800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Data kartu dan akun Anda terenkripsi dan aman. Kami tidak menyimpan informasi sensitif.",
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 30),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
     );
   }
 
-  // Widget Header Per Section
   Widget _buildSectionHeader(IconData icon, String title) {
     return Row(
       children: [
@@ -200,8 +220,24 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     );
   }
 
-  // Widget Kartu Metode Pembayaran
   Widget _buildCardItem(Map<String, dynamic> data, String type, int index) {
+    String name = data['name'] ?? 'Metode';
+    String detail = data['detail'] ?? '****';
+    bool isMain = (data['is_default'] == '1');
+
+    IconData icon = Icons.credit_card;
+    Color color = Colors.grey;
+    if (name.toLowerCase().contains('gopay')) {
+      icon = Icons.account_balance_wallet;
+      color = Colors.green;
+    } else if (name.toLowerCase().contains('ovo')) {
+      icon = Icons.monetization_on;
+      color = Colors.purple;
+    } else if (name.toLowerCase().contains('bca')) {
+      icon = Icons.account_balance;
+      color = Colors.blue;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -213,23 +249,20 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             color: Colors.black.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Row(
         children: [
-          // Icon Lingkaran
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.grey[50],
               shape: BoxShape.circle,
             ),
-            child: Icon(data['icon'], color: data['color'], size: 24),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 16),
-          
-          // Info Nama & Nomor
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,19 +270,21 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 Row(
                   children: [
                     Text(
-                      data['name'],
+                      name,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
                     ),
-                    // Badge Utama (Jika ada)
-                    if (data['isMain'] == true) ...[
+                    if (isMain) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF5D4037), // Cokelat tua sesuai gambar
+                          color: const Color(0xFF5D4037),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
@@ -261,19 +296,17 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                           ),
                         ),
                       ),
-                    ]
+                    ],
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  data['number'],
+                  detail,
                   style: TextStyle(color: Colors.grey[500], fontSize: 13),
                 ),
               ],
             ),
           ),
-
-          // Tombol Hapus (Trash Icon)
           IconButton(
             icon: Icon(Icons.delete_outline, color: Colors.grey[400]),
             onPressed: () => _deleteMethod(type, index),
@@ -288,7 +321,11 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Text(
         "Belum ada metode tersimpan",
-        style: TextStyle(color: Colors.grey[400], fontSize: 12, fontStyle: FontStyle.italic),
+        style: TextStyle(
+          color: Colors.grey[400],
+          fontSize: 12,
+          fontStyle: FontStyle.italic,
+        ),
       ),
     );
   }
