@@ -84,4 +84,32 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('userRole');
   }
+
+  static Future<Map<String, dynamic>> resetPassword(
+    String email,
+    String phone,
+    String newPassword,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/reset_password.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'phone': phone,
+          'new_password': newPassword,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return {
+        "status": "error",
+        "message": "Server Error: ${response.statusCode}",
+      };
+    } catch (e) {
+      return {"status": "error", "message": "Koneksi gagal: $e"};
+    }
+  }
 }

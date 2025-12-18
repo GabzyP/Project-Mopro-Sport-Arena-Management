@@ -16,6 +16,9 @@ class _AuthScreenState extends State<AuthScreen>
   bool _isPasswordVisible = false;
   bool _isLoading = false;
 
+  final _loginFormKey = GlobalKey<FormState>();
+  final _registerFormKey = GlobalKey<FormState>();
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -31,9 +34,21 @@ class _AuthScreenState extends State<AuthScreen>
     _tabController = TabController(length: 2, vsync: this);
   }
 
+  String? _emailValidator(String? value) {
+    if (value == null || value.isEmpty) return 'Email wajib diisi';
+    if (!value.contains('@') || !value.contains('.'))
+      return 'Format email salah';
+    return null;
+  }
+
+  String? _passwordValidator(String? value) {
+    if (value == null || value.isEmpty) return 'Password wajib diisi';
+    if (value.length < 6) return 'Minimal 6 karakter';
+    return null;
+  }
+
   Future<void> _handleLogin() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showSnack("Mohon isi semua field", isError: true);
+    if (!_loginFormKey.currentState!.validate()) {
       return;
     }
 
@@ -68,10 +83,7 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   Future<void> _handleRegister() async {
-    if (_nameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty) {
-      _showSnack("Mohon lengkapi data", isError: true);
+    if (!_registerFormKey.currentState!.validate()) {
       return;
     }
 
@@ -95,6 +107,12 @@ class _AuthScreenState extends State<AuthScreen>
       if (mounted) {
         _showSnack("Registrasi Berhasil! Silakan Login.");
         _tabController.animateTo(0);
+
+        _nameController.clear();
+        _emailController.clear();
+        _passwordController.clear();
+        _confirmPasswordController.clear();
+        _phoneController.clear();
       }
     } else {
       if (mounted) _showSnack(result['message'], isError: true);
@@ -108,6 +126,118 @@ class _AuthScreenState extends State<AuthScreen>
         backgroundColor: isError ? Colors.red : primaryColor,
         behavior: SnackBarBehavior.floating,
       ),
+    );
+  }
+
+  void _showForgotPasswordDialog() {
+    final emailResetController = TextEditingController();
+    final phoneResetController = TextEditingController();
+    final newPassResetController = TextEditingController();
+    bool isLoadingReset = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text("Reset Password"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Masukkan Email dan No. Telepon yang terdaftar untuk verifikasi.",
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: emailResetController,
+                      decoration: const InputDecoration(
+                        labelText: "Email Terdaftar",
+                        prefixIcon: Icon(Icons.email_outlined),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: phoneResetController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: "No. Telepon",
+                        prefixIcon: Icon(Icons.phone),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: newPassResetController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: "Password Baru",
+                        prefixIcon: Icon(Icons.lock_reset),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Batal"),
+                ),
+                ElevatedButton(
+                  onPressed: isLoadingReset
+                      ? null
+                      : () async {
+                          if (emailResetController.text.isEmpty ||
+                              phoneResetController.text.isEmpty ||
+                              newPassResetController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Isi semua data")),
+                            );
+                            return;
+                          }
+
+                          setStateDialog(() => isLoadingReset = true);
+
+                          final result = await AuthService.resetPassword(
+                            emailResetController.text,
+                            phoneResetController.text,
+                            newPassResetController.text,
+                          );
+
+                          setStateDialog(() => isLoadingReset = false);
+
+                          if (mounted) {
+                            Navigator.pop(context);
+                            _showSnack(
+                              result['message'],
+                              isError: result['status'] == 'error',
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: isLoadingReset
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text("Reset Password"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -307,133 +437,42 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   Widget _buildLoginForm() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          _buildInput("Email", Icons.email_outlined, _emailController),
-          const SizedBox(height: 16),
-          _buildInput(
-            "Password",
-            Icons.lock_outline,
-            _passwordController,
-            isPassword: true,
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {},
-              child: Text(
-                "Lupa password?",
-                style: TextStyle(color: primaryColor),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _handleLogin,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text(
-                      "Masuk",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Row(
-            children: [
-              Expanded(child: Divider()),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  "ATAU",
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              ),
-              Expanded(child: Divider()),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.g_mobiledata, size: 28),
-                  label: const Text("Google"),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.phone, size: 20),
-                  label: const Text("Telepon"),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRegisterForm() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: SingleChildScrollView(
+    return Form(
+      key: _loginFormKey,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildInput("Nama Lengkap", Icons.person_outline, _nameController),
-            const SizedBox(height: 12),
-            _buildInput("Email", Icons.email_outlined, _emailController),
-            const SizedBox(height: 12),
+            _buildInput(
+              "Email",
+              Icons.email_outlined,
+              _emailController,
+              validator: _emailValidator,
+            ),
+            const SizedBox(height: 16),
             _buildInput(
               "Password",
               Icons.lock_outline,
               _passwordController,
               isPassword: true,
+              validator: _passwordValidator,
             ),
-            const SizedBox(height: 12),
-            _buildInput(
-              "Konfirmasi Password",
-              Icons.lock_outline,
-              _confirmPasswordController,
-              isPassword: true,
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _showForgotPasswordDialog,
+                child: Text(
+                  "Lupa password?",
+                  style: TextStyle(color: primaryColor),
+                ),
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleRegister,
+                onPressed: _isLoading ? null : _handleLogin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   shape: RoundedRectangleBorder(
@@ -444,7 +483,7 @@ class _AuthScreenState extends State<AuthScreen>
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                        "Daftar Sekarang",
+                        "Masuk",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -453,7 +492,139 @@ class _AuthScreenState extends State<AuthScreen>
                       ),
               ),
             ),
+            const SizedBox(height: 20),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    "ATAU",
+                    style: TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(Icons.g_mobiledata, size: 28),
+                    label: const Text("Google"),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(Icons.phone, size: 20),
+                    label: const Text("Telepon"),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRegisterForm() {
+    return Form(
+      key: _registerFormKey,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildInput(
+                "Nama Lengkap",
+                Icons.person_outline,
+                _nameController,
+                validator: (val) =>
+                    val == null || val.isEmpty ? "Nama wajib diisi" : null,
+              ),
+              const SizedBox(height: 12),
+              _buildInput(
+                "Email",
+                Icons.email_outlined,
+                _emailController,
+                validator: _emailValidator,
+              ),
+              const SizedBox(height: 12),
+              _buildInput(
+                "Password",
+                Icons.lock_outline,
+                _passwordController,
+                isPassword: true,
+                validator: _passwordValidator,
+              ),
+              const SizedBox(height: 12),
+              _buildInput(
+                "Konfirmasi Password",
+                Icons.lock_outline,
+                _confirmPasswordController,
+                isPassword: true,
+                validator: (val) {
+                  if (val == null || val.isEmpty)
+                    return "Konfirmasi password wajib diisi";
+                  if (val != _passwordController.text)
+                    return "Password tidak cocok";
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildInput(
+                "No. Telepon",
+                Icons.phone_android,
+                _phoneController,
+                validator: (val) => val == null || val.isEmpty
+                    ? "No. Telepon wajib diisi"
+                    : null,
+              ),
+
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleRegister,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          "Daftar Sekarang",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -464,6 +635,7 @@ class _AuthScreenState extends State<AuthScreen>
     IconData icon,
     TextEditingController controller, {
     bool isPassword = false,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,9 +645,11 @@ class _AuthScreenState extends State<AuthScreen>
           style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
         ),
         const SizedBox(height: 6),
-        TextField(
+        TextFormField(
           controller: controller,
           obscureText: isPassword && !_isPasswordVisible,
+          validator: validator,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           decoration: InputDecoration(
             prefixIcon: Icon(icon, size: 20, color: Colors.grey),
             suffixIcon: isPassword
@@ -493,7 +667,10 @@ class _AuthScreenState extends State<AuthScreen>
                 : null,
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 10,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
@@ -505,6 +682,10 @@ class _AuthScreenState extends State<AuthScreen>
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: primaryColor),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red),
             ),
           ),
         ),
