@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:kelompok6_sportareamanagement/screens/main_layout.dart';
 import '../services/auth_service.dart';
 import 'auth_screen.dart';
+// Import themeNotifier dari main.dart
+import '../main.dart'; 
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -12,20 +15,20 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool notifPush = true;
   bool notifEmail = true;
-  bool darkMode = false;
 
   @override
   Widget build(BuildContext context) {
+    // Cek apakah sedang mode gelap untuk mengatur warna secara adaptif
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           "Pengaturan",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
         elevation: 0,
-        foregroundColor: Colors.black,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -67,8 +70,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 "Mode Gelap",
                 "Tampilan tema gelap",
                 isToggle: true,
-                val: darkMode,
-                onChanged: (v) => setState(() => darkMode = v),
+                // Gunakan nilai dari notifier global
+                val: themeNotifier.value == ThemeMode.dark,
+                onChanged: (v) {
+                  setState(() {
+                    // Ubah tema aplikasi secara global
+                    themeNotifier.value = v ? ThemeMode.dark : ThemeMode.light;
+                  });
+                },
               ),
             ]),
             const SizedBox(height: 20),
@@ -77,17 +86,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: ElevatedButton.icon(
                 onPressed: () async {
                   await AuthService.logout();
-                  if (mounted)
+                  if (mounted) {
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(builder: (_) => const AuthScreen()),
                       (r) => false,
                     );
+                  }
                 },
                 icon: const Icon(Icons.logout),
                 label: const Text("Keluar"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red[50],
+                  backgroundColor: isDark ? Colors.red.withOpacity(0.1) : Colors.red[50],
                   foregroundColor: Colors.red,
                   elevation: 0,
                   padding: const EdgeInsets.all(16),
@@ -106,6 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSection(String title, List<Widget> children) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -113,16 +124,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
           ),
         ),
         Container(
           margin: const EdgeInsets.only(bottom: 24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(children: children),
@@ -140,6 +148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool? val,
     Function(bool)? onChanged,
   }) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
@@ -151,16 +160,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        style: TextStyle(
+          fontWeight: FontWeight.bold, 
+          fontSize: 14,
+          color: isDark ? Colors.white : Colors.black,
+        ),
       ),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+      subtitle: Text(
+        subtitle, 
+        style: TextStyle(
+          fontSize: 12,
+          color: isDark ? Colors.grey : Colors.black54,
+        )
+      ),
       trailing: isToggle
           ? Switch(
               value: val!,
               onChanged: onChanged,
               activeColor: const Color(0xFF22c55e),
             )
-          : const Icon(Icons.chevron_right, color: Colors.grey),
+          : Icon(Icons.chevron_right, color: isDark ? Colors.grey : Colors.grey),
       onTap: isLink ? () {} : null,
     );
   }
