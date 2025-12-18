@@ -38,12 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
     {'id': 'volleyball', 'label': 'Voli', 'emoji': '🏐'},
   ];
 
-  Map<String, dynamic> homeStats = {
-    "total_venues": "-",
-    "total_fields": "-",
-    "availability": "-",
-  };
-
   @override
   void initState() {
     super.initState();
@@ -52,18 +46,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _loadVenues() async {
     final dataVenues = await ApiService.getVenues();
-    if (dataVenues.isNotEmpty) {
-      print(
-        "DEBUG: Venue ${dataVenues[0].name} - Lat: ${dataVenues[0].latitude}",
-      );
-    }
-    final dataStats = await ApiService.getHomeStats();
 
     if (mounted) {
       setState(() {
         venues = dataVenues;
         filteredVenues = dataVenues;
-        homeStats = dataStats;
         isLoading = false;
       });
     }
@@ -247,6 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            // --- FILTER OLAHRAGA (TETAP ADA) ---
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -305,54 +293,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  _buildStatCard(
-                    homeStats['total_venues'].toString(),
-                    'Venue',
-                    primaryColor,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildStatCard(
-                    homeStats['total_fields'].toString(),
-                    'Lapangan',
-                    secondaryColor,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildStatCard(
-                    homeStats['availability'].toString(),
-                    'Tersedia',
-                    primaryColor,
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(height: 16),
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Venue Terdekat',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: Text(
-                          "Lihat Semua",
-                          style: TextStyle(color: primaryColor),
-                        ),
-                      ),
-                    ],
-                  ),
                   if (isLoading)
                     const Center(child: CircularProgressIndicator())
                   else if (filteredVenues.isEmpty)
@@ -385,49 +331,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatCard(String val, String label, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Text(
-              val,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
         children: const [
           Text('🏟', style: TextStyle(fontSize: 48)),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'Tidak ada venue',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

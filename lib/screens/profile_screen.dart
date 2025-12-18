@@ -12,7 +12,6 @@ import 'my_review_screen.dart';
 import 'setting_screen.dart';
 import 'help_screen.dart';
 
-
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -26,7 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _userId;
   String? _profilePhotoUrl;
 
-  final Color primaryColor = const Color(0xFF22c55e); // Warna hijau sesuai tema
+  final Color primaryColor = const Color(0xFF22c55e);
 
   @override
   void initState() {
@@ -49,7 +48,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null && _userId != null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Mengupload foto...")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Mengupload foto...")));
 
       final result = await ApiService.updateProfilePhoto(
         _userId!,
@@ -68,7 +69,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SnackBar(content: Text("Foto berhasil diupdate!")),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'])));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result['message'])));
       }
     }
   }
@@ -108,9 +111,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: Colors.grey[100],
       body: Stack(
         children: [
-          // Header Background Hijau (Tinggi dikurangi karena statistik dihapus)
           Container(
-            height: 220, 
+            height: 220,
             width: double.infinity,
             decoration: BoxDecoration(
               color: primaryColor,
@@ -127,7 +129,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   const SizedBox(height: 20),
 
-                  // Bagian Informasi Profil (Tanpa tombol Edit sesuai permintaan)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Row(
@@ -138,14 +139,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Container(
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 3),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
                               ),
                               child: CircleAvatar(
                                 radius: 40,
                                 backgroundColor: Colors.white,
                                 backgroundImage: _getProfileImage(),
                                 child: _profilePhotoUrl == null
-                                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                                    ? const Icon(
+                                        Icons.person,
+                                        size: 40,
+                                        color: Colors.grey,
+                                      )
                                     : null,
                               ),
                             ),
@@ -156,8 +164,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 onTap: _changePhoto,
                                 child: Container(
                                   padding: const EdgeInsets.all(6),
-                                  decoration: const BoxDecoration(color: Colors.amber, shape: BoxShape.circle),
-                                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.amber,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -209,7 +224,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const PaymentMethodScreen()),
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const PaymentMethodScreen(),
+                              ),
                             );
                           },
                         ),
@@ -221,12 +239,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const NotificationScreen(),
+                              ),
                             );
                           },
                         ),
-
-                      
 
                         _buildMenuTile(
                           Icons.star_outline,
@@ -234,7 +253,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const MyReviewsScreen()),
+                              MaterialPageRoute(
+                                builder: (context) => const MyReviewsScreen(),
+                              ),
                             );
                           },
                         ),
@@ -245,7 +266,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const HelpScreen()),
+                              MaterialPageRoute(
+                                builder: (context) => const HelpScreen(),
+                              ),
                             );
                           },
                         ),
@@ -256,7 +279,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                              MaterialPageRoute(
+                                builder: (context) => const SettingsScreen(),
+                              ),
                             );
                           },
                         ),
@@ -291,7 +316,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildMemberBadge() {
     return InkWell(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LevelMemberScreen())),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LevelMemberScreen()),
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -304,7 +332,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Icon(Icons.emoji_events, color: Colors.amber, size: 16),
             SizedBox(width: 6),
-            Text("Member Gold", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+            Text(
+              "Member Gold",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
             SizedBox(width: 4),
             Icon(Icons.arrow_forward_ios, color: Colors.white, size: 10),
           ],
@@ -313,14 +348,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMenuTile(IconData icon, String title, {String? badge, bool isDanger = false, VoidCallback? onTap}) {
+  Widget _buildMenuTile(
+    IconData icon,
+    String title, {
+    String? badge,
+    bool isDanger = false,
+    VoidCallback? onTap,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: ListTile(
@@ -328,10 +373,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: isDanger ? Colors.red.withOpacity(0.1) : primaryColor.withOpacity(0.1),
+            color: isDanger
+                ? Colors.red.withOpacity(0.1)
+                : primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: isDanger ? Colors.red : primaryColor, size: 22),
+          child: Icon(
+            icon,
+            color: isDanger ? Colors.red : primaryColor,
+            size: 22,
+          ),
         ),
         title: Text(
           title,
@@ -346,9 +397,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             if (badge != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.brown[700], borderRadius: BorderRadius.circular(20)),
-                child: Text(badge, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.brown[700],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  badge,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             if (badge != null) const SizedBox(width: 8),
             Icon(Icons.chevron_right, color: Colors.grey.shade400),
