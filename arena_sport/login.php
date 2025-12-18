@@ -17,25 +17,27 @@ include 'koneksi.php';
 $json_data = file_get_contents("php://input");
 $data = json_decode($json_data, true);
 
-$email = $data['email'] ?? null;
+$identifier = $data['email'] ?? null; 
 $password = $data['password'] ?? null;
 
-if (empty($email) || empty($password)) {
+if (empty($identifier) || empty($password)) {
     echo json_encode([
         'status' => 'error', 
-        'message' => 'Email dan password harus diisi.'
+        'message' => 'Email/No. Telepon dan password harus diisi.'
     ]);
     exit();
 }
 
-$sql = "SELECT id, password, name, email, role, photo_profile  FROM users WHERE email = '$email'";
+$sql = "SELECT id, password, name, email, phone, role, photo_profile 
+        FROM users 
+        WHERE email = '$identifier' OR phone = '$identifier'";
+
 $result = $conn->query($sql);
 
 if ($result && $result->num_rows > 0) {
     $user = $result->fetch_assoc();
     
     if (password_verify($password, $user['password'])) {
-        
         echo json_encode([
             "status" => "success", 
             "message" => "Login Berhasil!",
@@ -43,22 +45,16 @@ if ($result && $result->num_rows > 0) {
                 "id" => $user['id'],
                 "name" => $user['name'],
                 "email" => $user['email'], 
+                "phone" => $user['phone'],
                 "role" => $user['role'],
                 "photo_profile" => $user['photo_profile'] ?? null 
             ]
         ]);
-        
     } else {
-        echo json_encode([
-            "status" => "error", 
-            "message" => "Password salah."
-        ]);
+        echo json_encode(["status" => "error", "message" => "Password salah."]);
     }
 } else {
-    echo json_encode([
-        "status" => "error", 
-        "message" => "Email tidak ditemukan."
-    ]);
+    echo json_encode(["status" => "error", "message" => "Akun tidak ditemukan."]);
 }
 
 $conn->close();

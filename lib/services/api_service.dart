@@ -1,11 +1,12 @@
+import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/venue_model.dart';
 import '../models/booking_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.1.8/arena_sport';
+  static const String baseUrl = 'http://192.168.1.7/arena_sport';
 
   static Future<List<Venue>> getVenues({
     String category = 'all',
@@ -26,8 +27,6 @@ class ApiService {
       return [];
     }
   }
-
-  
 
   static Future<List<Field>> getFields(String venueId) async {
     try {
@@ -191,6 +190,7 @@ class ApiService {
     }
   }
 
+  // --- PERBAIKAN DI SINI ---
   static Future<Map<String, dynamic>> updateProfilePhoto(
     String userId,
     File imageFile,
@@ -202,18 +202,38 @@ class ApiService {
       );
 
       request.fields['user_id'] = userId;
+
       var pic = await http.MultipartFile.fromPath('image', imageFile.path);
       request.files.add(pic);
 
       var response = await request.send();
       var responseData = await response.stream.bytesToString();
 
+      print("Respon Server: $responseData");
+
       if (response.statusCode == 200) {
-        return json.decode(responseData);
+        final result = json.decode(responseData);
+
+        // TAMBAHAN: Simpan URL foto baru ke HP agar langsung berubah
+        if (result['status'] == 'success' && result['data'] != null) {
+          final prefs = await SharedPreferences.getInstance();
+          String? newPhotoUrl = result['data']['photo_url'];
+
+          if (newPhotoUrl != null) {
+            await prefs.setString('userPhoto', newPhotoUrl);
+            print("Session Updated dengan Foto Baru: $newPhotoUrl");
+          }
+        }
+
+        return result;
       } else {
-        return {"status": "error", "message": "Server error"};
+        return {
+          "status": "error",
+          "message": "Server error: ${response.statusCode}",
+        };
       }
     } catch (e) {
+      print("Error Upload: $e");
       return {"status": "error", "message": e.toString()};
     }
   }
@@ -284,5 +304,9 @@ class ApiService {
     }
   }
 
-  static Future<dynamic> updateUserData(String s, String text, String text2) async {}
+  static Future<dynamic> updateUserData(
+    String s,
+    String text,
+    String text2,
+  ) async {}
 }

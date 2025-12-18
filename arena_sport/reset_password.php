@@ -7,6 +7,11 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 include 'koneksi.php';
 
 $json = file_get_contents('php://input');
@@ -27,17 +32,27 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+    $userId = $row['id'];
+    $stmt->close();
     $hashed_password = password_hash($newPassword, PASSWORD_DEFAULT);
+    $updateStmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
     
-    $updateStmt = $conn->prepare("UPDATE users SET password = ? WHERE email = ?");
-    $updateStmt->bind_param("ss", $hashed_password, $email);
-    
-    if ($updateStmt->execute()) {
-        echo json_encode(["status" => "success", "message" => "Password berhasil diubah. Silakan login."]);
+    if ($updateStmt) {
+        $updateStmt->bind_param("si", $hashed_password, $userId);
+        
+        if ($updateStmt->execute()) {
+            echo json_encode(["status" => "success", "message" => "Password berhasil diubah. Silakan login."]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "Gagal mengupdate password di database."]);
+        }
+        $updateStmt->close();
     } else {
-        echo json_encode(["status" => "error", "message" => "Gagal update password"]);
+        echo json_encode(["status" => "error", "message" => "Terjadi kesalahan sistem (Prepare Failed)."]);
     }
 } else {
-    echo json_encode(["status" => "error", "message" => "Email atau No. Telepon tidak sesuai dengan data kami."]);
+    echo json_encode(["status" => "error", "message" => "Email atau No. Telepon tidak cocok."]);
 }
+
+$conn->close();
 ?>

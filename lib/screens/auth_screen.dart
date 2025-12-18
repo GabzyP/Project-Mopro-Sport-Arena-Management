@@ -19,8 +19,8 @@ class _AuthScreenState extends State<AuthScreen>
   final _loginFormKey = GlobalKey<FormState>();
   final _registerFormKey = GlobalKey<FormState>();
 
-  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -32,6 +32,21 @@ class _AuthScreenState extends State<AuthScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+  }
+
+  String? _emailOrPhoneValidator(String? value) {
+    if (value == null || value.isEmpty) return 'Wajib diisi';
+
+    final isNumeric = double.tryParse(value) != null;
+    if (isNumeric) {
+      if (value.length < 9) return 'Nomor telepon tidak valid';
+      return null;
+    }
+
+    if (!value.contains('@') || !value.contains('.')) {
+      return 'Format email atau nomor telepon salah';
+    }
+    return null;
   }
 
   String? _emailValidator(String? value) {
@@ -71,7 +86,7 @@ class _AuthScreenState extends State<AuthScreen>
           );
         } else {
           _showSnack(
-            "Akun ini adalah Admin. Silakan login di Portal Admin.",
+            "Akun ini adalah Admin. Silakan login lewat Logo Bola.",
             isError: true,
           );
         }
@@ -107,7 +122,6 @@ class _AuthScreenState extends State<AuthScreen>
       if (mounted) {
         _showSnack("Registrasi Berhasil! Silakan Login.");
         _tabController.animateTo(0);
-
         _nameController.clear();
         _emailController.clear();
         _passwordController.clear();
@@ -259,64 +273,6 @@ class _AuthScreenState extends State<AuthScreen>
         child: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: primaryColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            "SA",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Text(
-                          "SportArena",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AdminLoginScreen(),
-                        ),
-                      ),
-                      icon: Icon(
-                        Icons.security,
-                        size: 16,
-                        color: Colors.black87,
-                      ),
-                      label: const Text(
-                        "Admin",
-                        style: TextStyle(color: Colors.black87),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: primaryColor.withOpacity(0.3)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
@@ -324,27 +280,38 @@ class _AuthScreenState extends State<AuthScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          decoration: BoxDecoration(
-                            color: primaryColor,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: primaryColor.withOpacity(0.3),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AdminLoginScreen(),
                               ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Text("⚽", style: TextStyle(fontSize: 40)),
+                            );
+                          },
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            margin: const EdgeInsets.only(bottom: 20),
+                            decoration: BoxDecoration(
+                              color: primaryColor,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryColor.withOpacity(0.3),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Text("⚽", style: TextStyle(fontSize: 40)),
+                            ),
                           ),
                         ),
+
                         const Text(
-                          "Selamat Datang",
+                          "Shibuya Arena",
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -422,13 +389,7 @@ class _AuthScreenState extends State<AuthScreen>
                 ),
               ),
 
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  "© 2025 SportArena. All rights reserved.",
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ),
+              const Padding(padding: EdgeInsets.all(6)),
             ],
           ),
         ),
@@ -444,10 +405,10 @@ class _AuthScreenState extends State<AuthScreen>
         child: Column(
           children: [
             _buildInput(
-              "Email",
-              Icons.email_outlined,
+              "Email / No. Telepon",
+              Icons.person_outline,
               _emailController,
-              validator: _emailValidator,
+              validator: _emailOrPhoneValidator,
             ),
             const SizedBox(height: 16),
             _buildInput(
@@ -467,7 +428,7 @@ class _AuthScreenState extends State<AuthScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -491,52 +452,6 @@ class _AuthScreenState extends State<AuthScreen>
                         ),
                       ),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Row(
-              children: [
-                Expanded(child: Divider()),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: Text(
-                    "ATAU",
-                    style: TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-                ),
-                Expanded(child: Divider()),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.g_mobiledata, size: 28),
-                    label: const Text("Google"),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.phone, size: 20),
-                    label: const Text("Telepon"),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
