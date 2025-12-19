@@ -1,6 +1,7 @@
 <?php
 include 'koneksi.php';
 header("Content-Type: application/json");
+
 $data = json_decode(file_get_contents("php://input"), true);
 
 if ($data) {
@@ -18,13 +19,13 @@ if ($data) {
             VALUES ('$booking_code', '$user_id', '$field_id', '$booking_date', '$start_time', '$end_time', '$total_price', '$payment_method', 'pending')";
 
     if ($conn->query($sql)) {
-        $sql_notif = "INSERT INTO notifications (user_id, title, message, category, is_read, created_at) 
-                      VALUES ('$user_id', 'Pesanan Dibuat', 'Selesaikan pembayaran untuk tiket $booking_code', 'booking', '0', NOW())";
-        $conn->query($sql_notif);
+        $msg = "Pesanan $booking_code dibuat. Segera lakukan pembayaran via $payment_method.";
+        $conn->query("INSERT INTO notifications (user_id, title, message, category, is_read, created_at) 
+                      VALUES ('$user_id', 'Menunggu Pembayaran', '$msg', 'booking', '0', NOW())");
 
         echo json_encode(["status" => "success", "booking_code" => $booking_code]);
     } else {
-        echo json_encode(["status" => "error", "message" => "Gagal simpan"]);
+        echo json_encode(["status" => "error", "message" => "Gagal menyimpan"]);
     }
 }
 ?>

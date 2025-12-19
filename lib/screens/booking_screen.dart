@@ -280,7 +280,7 @@ class _BookingScreenState extends State<BookingScreen> {
     String statusText = booking.status;
     IconData statusIcon = Icons.info;
 
-    // Logika Tingkatan Status
+    // Logika Tingkatan Status (Ditambahkan)
     if (booking.status == 'pending') {
       statusColor = Colors.redAccent;
       statusText = "Belum Bayar";
@@ -323,7 +323,7 @@ class _BookingScreenState extends State<BookingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // BAGIAN ATAS: ID TIKET & STATUS
+                // BAGIAN ATAS: ID TIKET & STATUS (Ditambahkan ID TIKET)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -390,7 +390,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     const SizedBox(width: 16),
                     const Icon(Icons.access_time, size: 14, color: Colors.grey),
                     const SizedBox(width: 6),
-                    // FITUR: Jam Booking
+                    // FITUR: Jam Booking Mulai - Selesai (Ditambahkan)
                     Text(
                       "${booking.startTime} - ${booking.endTime}",
                       style: const TextStyle(
@@ -402,7 +402,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   ],
                 ),
 
-                // TOMBOL BAYAR (Muncul hanya jika status 'pending')
+                // TOMBOL BAYAR SEKARANG (Ditambahkan: Muncul hanya jika status 'pending')
                 if (booking.status == 'pending') ...[
                   const SizedBox(height: 16),
                   SizedBox(
