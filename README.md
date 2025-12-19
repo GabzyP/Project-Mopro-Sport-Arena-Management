@@ -49,9 +49,9 @@ Aplikasi ini memiliki dua *role* pengguna:
 Aplikasi ini dibangun menggunakan teknologi berikut:
 
 ### **Frontend (Mobile)**
-* **Framework:** Flutter
-* **Language:** Dart (SDK ^3.9.2)
-* **Architecture:** MVC (Model-View-Controller) Pattern
+* **Framework:** Flutter SDK: ^3.24.0 (Stable)
+* **Language:** Dart SDK: ^3.4.0
+* **Minimum Android SDK:** API 21 (Android 5.0 Lollipop)
 
 ### **Key Dependencies (Packages)**
 * `http`: ^1.2.0 (Koneksi ke REST API)
@@ -64,8 +64,8 @@ Aplikasi ini dibangun menggunakan teknologi berikut:
 * `qr_flutter`: (Generate QR Code booking)
 
 ### **Backend (API & Database)**
-* **Language:** PHP Native
-* **Database:** MySQL (MariaDB)
+* **Language:** PHP 7.4+ (Native API)
+* **Database:** MySQL/MariaDB 8.0+
 * **Server:** Apache (XAMPP/Localhost)
 
 ---
@@ -96,6 +96,11 @@ Agar aplikasi di HP/Emulator bisa terhubung ke Laptop:
   ```bash
   https://github.com/GabzyP/Project-Mopro-Sport-Arena-Management
   ```
+
+2. Masuk ke direktori
+```bash
+cd Project-Mopro-Sport-Arena-Management
+```
 2.  Install dependencies:
     ```bash
     flutter pub get
@@ -104,5 +109,4 @@ Agar aplikasi di HP/Emulator bisa terhubung ke Laptop:
     ```bash
     flutter run
     ```
-
 ---
