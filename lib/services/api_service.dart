@@ -1,12 +1,12 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 import '../models/venue_model.dart';
 import '../models/booking_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.1.7/arena_sport';
+  static const String baseUrl = 'http://10.228.184.179/arena_sport';
 
   static Future<List<Venue>> getVenues({
     String category = 'all',
@@ -115,11 +115,7 @@ class ApiService {
           'payment_method': paymentMethod,
         }),
       );
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return {"status": "error", "message": "Gagal koneksi server"};
+      return json.decode(response.body);
     } catch (e) {
       return {"status": "error", "message": e.toString()};
     }
@@ -196,7 +192,6 @@ class ApiService {
     }
   }
 
-  // --- PERBAIKAN DI SINI ---
   static Future<Map<String, dynamic>> updateProfilePhoto(
     String userId,
     File imageFile,
@@ -218,20 +213,7 @@ class ApiService {
       print("Respon Server: $responseData");
 
       if (response.statusCode == 200) {
-        final result = json.decode(responseData);
-
-        // TAMBAHAN: Simpan URL foto baru ke HP agar langsung berubah
-        if (result['status'] == 'success' && result['data'] != null) {
-          final prefs = await SharedPreferences.getInstance();
-          String? newPhotoUrl = result['data']['photo_url'];
-
-          if (newPhotoUrl != null) {
-            await prefs.setString('userPhoto', newPhotoUrl);
-            print("Session Updated dengan Foto Baru: $newPhotoUrl");
-          }
-        }
-
-        return result;
+        return json.decode(responseData);
       } else {
         return {
           "status": "error",
@@ -291,7 +273,6 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/get_user_bookings.php?user_id=$userId'),
       );
-
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/booking_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 
 class BookingScreen extends StatefulWidget {
@@ -24,12 +25,39 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   void _loadBookings() async {
-    final data = await ApiService.getMyBookings();
-    if (mounted) {
-      setState(() {
-        allBookings = data;
-        isLoading = false;
-      });
+    final prefs = await SharedPreferences.getInstance();
+    final uid = prefs.getString('userId');
+
+    if (uid != null) {
+      final dynamicData = await ApiService.getUserBookings(uid);
+
+      if (mounted) {
+        setState(() {
+          allBookings = (dynamicData as List)
+              .map((item) => Booking.fromJson(item))
+              .toList();
+          isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  // Fungsi untuk simulasi update status dari Pending ke Processing
+  void _handlePayment(String bookingId) async {
+    bool success = await ApiService.updateOrderStatus(bookingId, 'processing');
+    if (success) {
+      _loadBookings(); // Refresh data setelah bayar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Pembayaran Berhasil! Menunggu Konfirmasi Admin."),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Gagal memproses pembayaran.")),
+      );
     }
   }
 
@@ -39,8 +67,14 @@ class _BookingScreenState extends State<BookingScreen> {
         ? allBookings
         : allBookings.where((b) => b.status == selectedFilter).toList();
 
+    // Filter untuk pengelompokan tampilan
     List<Booking> upcoming = displayedBookings
-        .where((b) => b.status == 'booked' || b.status == 'locked')
+        .where(
+          (b) =>
+              b.status == 'booked' ||
+              b.status == 'pending' ||
+              b.status == 'processing',
+        )
         .toList();
     List<Booking> history = displayedBookings
         .where((b) => b.status == 'completed' || b.status == 'cancelled')
@@ -122,7 +156,8 @@ class _BookingScreenState extends State<BookingScreen> {
               child: Row(
                 children: [
                   _filterChip('all', 'Semua'),
-                  _filterChip('locked', 'Menunggu'),
+                  _filterChip('pending', 'Belum Bayar'),
+                  _filterChip('processing', 'Diproses'),
                   _filterChip('booked', 'Aktif'),
                   _filterChip('completed', 'Selesai'),
                   _filterChip('cancelled', 'Dibatalkan'),
@@ -243,17 +278,29 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget _bookingCard(Booking booking) {
     Color statusColor = Colors.grey;
     String statusText = booking.status;
-    if (booking.status == 'booked') {
+    IconData statusIcon = Icons.info;
+
+    // Logika Tingkatan Status
+    if (booking.status == 'pending') {
+      statusColor = Colors.redAccent;
+      statusText = "Belum Bayar";
+      statusIcon = Icons.payment;
+    } else if (booking.status == 'processing') {
+      statusColor = Colors.blue;
+      statusText = "Menunggu Konfirmasi";
+      statusIcon = Icons.hourglass_empty;
+    } else if (booking.status == 'booked') {
       statusColor = Colors.green;
       statusText = "Terkonfirmasi";
-    }
-    if (booking.status == 'locked') {
-      statusColor = Colors.orange;
-      statusText = "Menunggu";
-    }
-    if (booking.status == 'cancelled') {
+      statusIcon = Icons.check_circle;
+    } else if (booking.status == 'cancelled') {
       statusColor = Colors.red;
       statusText = "Dibatalkan";
+      statusIcon = Icons.cancel;
+    } else if (booking.status == 'completed') {
+      statusColor = Colors.grey;
+      statusText = "Selesai";
+      statusIcon = Icons.history;
     }
 
     return Container(
@@ -276,28 +323,17 @@ class _BookingScreenState extends State<BookingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // BAGIAN ATAS: ID TIKET & STATUS
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            booking.fieldName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Text(
-                            booking.venueName,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      "ID TIKET: ${booking.bookingCode}",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: brownColor.withOpacity(0.6),
+                        letterSpacing: 1.1,
                       ),
                     ),
                     Container(
@@ -306,19 +342,37 @@ class _BookingScreenState extends State<BookingScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor,
+                        color: statusColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(
-                        statusText,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(statusIcon, size: 12, color: statusColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  booking.fieldName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  booking.venueName,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -336,12 +390,41 @@ class _BookingScreenState extends State<BookingScreen> {
                     const SizedBox(width: 16),
                     const Icon(Icons.access_time, size: 14, color: Colors.grey),
                     const SizedBox(width: 6),
+                    // FITUR: Jam Booking
                     Text(
                       "${booking.startTime} - ${booking.endTime}",
-                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
                   ],
                 ),
+
+                // TOMBOL BAYAR (Muncul hanya jika status 'pending')
+                if (booking.status == 'pending') ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => _handlePayment(booking.id),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        "Bayar Sekarang",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
