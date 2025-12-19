@@ -46,7 +46,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
     if (mounted) {
       Navigator.pop(context);
       if (success) {
-        Navigator.pop(context);
+        Navigator.pop(context); // Tutup dialog detail
         _loadData();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -159,7 +159,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
               ),
               const SizedBox(height: 20),
 
-              if (order['status'] == 'booked')
+              // FITUR: Aksi Admin berdasarkan tingkatan status
+              if (order['status'] ==
+                  'processing') // Hanya muncul jika user sudah bayar
                 Row(
                   children: [
                     Expanded(
@@ -178,7 +180,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () =>
-                            _updateStatus(order['id'].toString(), 'confirmed'),
+                            _updateStatus(order['id'].toString(), 'booked'),
                         icon: const Icon(Icons.check),
                         label: const Text("Konfirmasi"),
                         style: ElevatedButton.styleFrom(
@@ -188,6 +190,18 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
                       ),
                     ),
                   ],
+                ),
+
+              if (order['status'] == 'pending')
+                const Center(
+                  child: Text(
+                    "Menunggu Pembayaran dari Customer",
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                 ),
 
               const SizedBox(height: 12),
@@ -225,7 +239,10 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
 
   @override
   Widget build(BuildContext context) {
-    int pendingCount = orders.where((o) => o['status'] == 'booked').length;
+    // FITUR: Hitung jumlah pesanan yang perlu dikonfirmasi (processing)
+    int pendingActionCount = orders
+        .where((o) => o['status'] == 'processing')
+        .length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -269,7 +286,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
                         ),
                       ],
                     ),
-                    if (pendingCount > 0)
+                    if (pendingActionCount > 0)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -280,7 +297,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          "$pendingCount Menunggu",
+                          "$pendingActionCount Perlu Konfirmasi",
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -316,14 +333,14 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
               unselectedLabelColor: Colors.grey,
               indicatorColor: primaryColor,
               labelStyle: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
               tabs: const [
                 Tab(text: "Semua"),
-                Tab(text: "Pending"),
-                Tab(text: "Konfirmasi"),
-                Tab(text: "Selesai"),
+                Tab(text: "Belum Bayar"),
+                Tab(text: "Proses"),
+                Tab(text: "Berhasil"),
               ],
             ),
           ),
@@ -335,9 +352,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
                     controller: _tabController,
                     children: [
                       _buildOrderList('all'),
+                      _buildOrderList('pending'),
+                      _buildOrderList('processing'),
                       _buildOrderList('booked'),
-                      _buildOrderList('confirmed'),
-                      _buildOrderList('completed'),
                     ],
                   ),
           ),
@@ -373,15 +390,21 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
         String statusText;
         IconData statusIcon;
 
+        // FITUR: Mapping Status Tingkatan Baru
         switch (item['status']) {
-          case 'booked':
-            statusColor = Colors.orange;
-            statusText = "Menunggu";
-            statusIcon = Icons.access_time;
+          case 'pending':
+            statusColor = Colors.redAccent;
+            statusText = "Belum Bayar";
+            statusIcon = Icons.payment;
             break;
-          case 'confirmed':
+          case 'processing':
+            statusColor = Colors.blue;
+            statusText = "Perlu Konfirmasi";
+            statusIcon = Icons.hourglass_top;
+            break;
+          case 'booked':
             statusColor = primaryColor;
-            statusText = "Dikonfirmasi";
+            statusText = "Berhasil";
             statusIcon = Icons.check_circle;
             break;
           case 'cancelled':
@@ -390,7 +413,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
             statusIcon = Icons.cancel;
             break;
           default:
-            statusColor = Colors.blue;
+            statusColor = Colors.grey;
             statusText = "Selesai";
             statusIcon = Icons.done_all;
         }
@@ -492,30 +515,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
                           ),
                         ),
                       ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green[50],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        "Lunas",
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                     ),
                     Text(
                       formatRupiah(item['total_price']),
