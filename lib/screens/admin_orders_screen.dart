@@ -159,9 +159,8 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
               ),
               const SizedBox(height: 20),
 
-              // FITUR: Aksi Admin berdasarkan tingkatan status
-              if (order['status'] ==
-                  'processing') // Hanya muncul jika user sudah bayar
+              // FITUR: Aksi Admin berdasarkan tingkatan status (Hanya processing yang bisa dikonfirmasi)
+              if (order['status'] == 'processing')
                 Row(
                   children: [
                     Expanded(
@@ -192,14 +191,18 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
                   ],
                 ),
 
+              // FITUR: Pesan informasi jika status masih pending
               if (order['status'] == 'pending')
                 const Center(
-                  child: Text(
-                    "Menunggu Pembayaran dari Customer",
-                    style: TextStyle(
-                      color: Colors.orange,
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      "Menunggu Pembayaran dari Customer",
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
                 ),
@@ -239,7 +242,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
 
   @override
   Widget build(BuildContext context) {
-    // FITUR: Hitung jumlah pesanan yang perlu dikonfirmasi (processing)
+    // FITUR: Menghitung jumlah pesanan yang perlu tindakan (status processing)
     int pendingActionCount = orders
         .where((o) => o['status'] == 'processing')
         .length;
@@ -390,7 +393,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
         String statusText;
         IconData statusIcon;
 
-        // FITUR: Mapping Status Tingkatan Baru
+        // FITUR: Mapping Status Tingkatan Baru untuk Tampilan List
         switch (item['status']) {
           case 'pending':
             statusColor = Colors.redAccent;
