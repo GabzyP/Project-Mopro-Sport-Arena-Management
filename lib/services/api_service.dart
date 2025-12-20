@@ -6,7 +6,7 @@ import '../models/venue_model.dart';
 import '../models/booking_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.228.184.179/arena_sport';
+  static const String baseUrl = 'http://192.168.18.10/arena_sport';
 
   static Future<List<Venue>> getVenues({
     String category = 'all',
@@ -293,6 +293,85 @@ class ApiService {
     } catch (e) {
       return [];
     }
+  }
+
+  static Future<Map<String, dynamic>> addPaymentMethod({
+    required String userId,
+    required String name,
+    required String type,
+    required double balance,
+    required String imageUrl,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/add_payment_method.php'),
+      body: {
+        'user_id': userId,
+        'name': name,
+        'type': type,
+        'balance': balance.toString(),
+        'image_url': imageUrl,
+      },
+    );
+    return json.decode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> deletePaymentMethod(
+    String methodId,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/delete_payment_method.php'),
+      body: {'id': methodId},
+    );
+    return json.decode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> topUpBalance({
+    required String methodId,
+    required double amount,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/top_up.php'),
+      body: {'id': methodId, 'amount': amount.toString()},
+    );
+    return json.decode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> lockBooking({
+    required String userId,
+    required String fieldId,
+    required String date,
+    required String startTime,
+    required String endTime,
+    required double totalPrice,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/create_booking.php'),
+      body: jsonEncode({
+        'user_id': userId,
+        'field_id': fieldId,
+        'booking_date': date,
+        'start_time': startTime,
+        'end_time': endTime,
+        'total_price': totalPrice,
+      }),
+    );
+    return json.decode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> payBooking({
+    required String bookingId,
+    required String userId,
+    required String paymentMethodId,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/pay_booking.php'),
+      body: jsonEncode({
+        'booking_id': bookingId,
+        'user_id': userId,
+        'payment_method': paymentMethodId,
+      }),
+    );
+    return json.decode(response.body);
   }
 
   static Future<dynamic> updateUserData(

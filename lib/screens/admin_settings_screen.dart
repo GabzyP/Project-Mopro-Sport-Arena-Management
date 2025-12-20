@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_service.dart';
 import 'auth_screen.dart';
-import 'admin_orders_screen.dart'; 
-import 'venue_list_admin_screen.dart'; 
-import 'admin_booking_settings_page.dart'; 
+import 'admin_orders_screen.dart';
+import 'venue_list_admin_screen.dart';
+import 'admin_booking_settings_page.dart';
 import 'admin_customer_management_page.dart';
 import 'admin_ad_management_page.dart';
 
@@ -54,12 +54,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     }
   }
 
-  // Fungsi Navigasi Baru
   void _navigateTo(Widget target) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => target),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (context) => target));
   }
 
   @override
@@ -90,12 +86,29 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     child: const CircleAvatar(
                       radius: 40,
                       backgroundColor: Color(0xFF22c55e),
-                      child: Text("AA", style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        "AA",
+                        style: TextStyle(
+                          fontSize: 24,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text("Admin Arena", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                  const Text("admin@sportarena.com", style: TextStyle(color: Colors.white70)),
+                  const Text(
+                    "Admin Arena",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Text(
+                    "admin@sportarena.com",
+                    style: TextStyle(color: Colors.white70),
+                  ),
                   const SizedBox(height: 12),
                   _buildBadge("Super Admin"),
                 ],
@@ -123,28 +136,26 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     Icons.calendar_today,
                     "Pengaturan Booking",
                     "Atur auto confirm & notifikasi",
-                    // SEKARANG MEMBUKA HALAMAN BARU
-                    onTap: () => _navigateTo(const AdminBookingSettingsPage()), 
+                    onTap: () => _navigateTo(const AdminBookingSettingsPage()),
                   ),
                   _buildMenuItem(
                     Icons.people_outline,
                     "Kelola Customer",
                     "Lihat & banned akun customer",
-                    // NAVIGASI KE HALAMAN CUSTOMER (Ganti Scaffold dengan screen asli jika sudah ada)
-                   onTap: () => _navigateTo(const AdminCustomerManagementPage()), 
-),
+                    onTap: () =>
+                        _navigateTo(const AdminCustomerManagementPage()),
+                  ),
                   _buildMenuItem(
                     Icons.campaign_outlined,
                     "Kelola Iklan",
                     "Buat & kelola promo",
-                    // NAVIGASI KE HALAMAN IKLAN (Ganti Scaffold dengan screen asli jika sudah ada)
-                    onTap: () => _navigateTo(const AdminAdManagementPage()), 
-),
+                    onTap: () => _navigateTo(const AdminAdManagementPage()),
+                  ),
                   _buildMenuItem(
                     Icons.storefront,
                     "Info Venue",
                     "Informasi venue & operasional",
-                    onTap: () => _navigateTo(const VenueListAdminScreen()), 
+                    onTap: () => _navigateTo(const VenueListAdminScreen()),
                   ),
 
                   const SizedBox(height: 24),
@@ -158,17 +169,25 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 
-  // --- WIDGET HELPER TETAP SAMA ---
   Widget _buildBadge(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text("👑", style: TextStyle(fontSize: 14)),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -181,35 +200,72 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            Text(val, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF22c55e))),
+            Text(
+              val,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF22c55e),
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey), textAlign: TextAlign.center),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, String subtitle, {VoidCallback? onTap}) {
+  Widget _buildMenuItem(
+    IconData icon,
+    String title,
+    String subtitle, {
+    VoidCallback? onTap,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Icon(icon, color: Colors.black87, size: 22),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
         onTap: onTap,
       ),
@@ -220,8 +276,14 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     return TextButton.icon(
       onPressed: _handleLogout,
       icon: const Icon(Icons.logout, size: 20),
-      label: const Text("Keluar", style: TextStyle(fontWeight: FontWeight.bold)),
-      style: TextButton.styleFrom(foregroundColor: Colors.red, alignment: Alignment.centerLeft),
+      label: const Text(
+        "Keluar",
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.red,
+        alignment: Alignment.centerLeft,
+      ),
     );
   }
 }

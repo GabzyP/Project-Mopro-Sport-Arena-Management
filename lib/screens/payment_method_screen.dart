@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
@@ -13,8 +14,13 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   final Color primaryColor = const Color(0xFF22c55e);
   bool isLoading = true;
 
-  List<dynamic> eWallets = [];
-  List<dynamic> banks = [];
+  List<dynamic> paymentMethods = [];
+
+  final currencyFormat = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
 
   @override
   void initState() {
@@ -23,57 +29,145 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   }
 
   void _loadMethods() async {
+    setState(() => isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     final uid = prefs.getString('userId');
     if (uid != null) {
-      final data = await ApiService.getSavedPaymentMethods(uid);
-
-      if (mounted) {
-        setState(() {
-          eWallets = [];
-          banks = [];
-
-          for (var item in data) {
-            if (item['type'] == 'wallet' || item['type'] == 'ewallet') {
-              eWallets.add(item);
-            } else {
-              banks.add(item);
-            }
-          }
-          isLoading = false;
-        });
+      try {
+        final data = await ApiService.getSavedPaymentMethods(uid);
+        if (mounted) {
+          setState(() {
+            paymentMethods = data;
+            isLoading = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) setState(() => isLoading = false);
       }
-    } else {
-      if (mounted) setState(() => isLoading = false);
     }
   }
 
-  void _deleteMethod(String type, int index) {
+  void _showAddMethodDialog() {
+    final nameController = TextEditingController();
+    final balanceController = TextEditingController(text: '0');
+    final imageController = TextEditingController(
+      text: 'https://via.placeholder.com/100',
+    );
+    String selectedType = 'wallet';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Tambah Metode Pembayaran"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: "Nama (Cth: Gopay, BCA)",
+                ),
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: selectedType,
+                items: const [
+                  DropdownMenuItem(value: 'wallet', child: Text("E-Wallet")),
+                  DropdownMenuItem(value: 'bank', child: Text("Transfer Bank")),
+                ],
+                onChanged: (val) => selectedType = val!,
+                decoration: const InputDecoration(labelText: "Tipe"),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: balanceController,
+                decoration: const InputDecoration(labelText: "Saldo Awal"),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: imageController,
+                decoration: const InputDecoration(
+                  labelText: "URL Icon/Logo",
+                  hintText: "http://...",
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+            onPressed: () async {
+              if (nameController.text.isNotEmpty) {
+                Navigator.pop(ctx);
+                _processAddMethod(
+                  nameController.text,
+                  selectedType,
+                  double.tryParse(balanceController.text) ?? 0,
+                  imageController.text,
+                );
+              }
+            },
+            child: const Text("Simpan"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _processAddMethod(
+    String name,
+    String type,
+    double balance,
+    String imgUrl,
+  ) async {
+    setState(() => isLoading = true);
+    final prefs = await SharedPreferences.getInstance();
+    final uid = prefs.getString('userId');
+
+    if (uid != null) {
+      try {
+        await ApiService.addPaymentMethod(
+          userId: uid,
+          name: name,
+          type: type,
+          balance: balance,
+          imageUrl: imgUrl,
+        );
+        _loadMethods();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Metode berhasil ditambahkan!")),
+        );
+      } catch (e) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Gagal menambah: $e")));
+      }
+    }
+  }
+
+  void _deleteMethod(String id, int index) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Hapus Metode?"),
-        content: const Text(
-          "Anda yakin ingin menghapus metode pembayaran ini?",
-        ),
+        content: const Text("Metode ini akan dihapus permanen dari akun Anda."),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text("Batal", style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                if (type == 'wallet') {
-                  eWallets.removeAt(index);
-                } else {
-                  banks.removeAt(index);
-                }
-              });
+            onPressed: () async {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Metode pembayaran dihapus")),
-              );
+              _processDelete(id);
             },
             child: const Text("Hapus", style: TextStyle(color: Colors.red)),
           ),
@@ -82,8 +176,31 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     );
   }
 
+  void _processDelete(String id) async {
+    setState(() => isLoading = true);
+    try {
+      await ApiService.deletePaymentMethod(id);
+      _loadMethods();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Metode pembayaran dihapus")),
+      );
+    } catch (e) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal menghapus: $e")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    List<dynamic> eWallets = paymentMethods
+        .where((m) => m['type'] == 'wallet' || m['type'] == 'ewallet')
+        .toList();
+    List<dynamic> banks = paymentMethods
+        .where((m) => m['type'] == 'bank' || m['type'] == 'va')
+        .toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -91,7 +208,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           "Metode Pembayaran",
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
-        centerTitle: false,
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -109,15 +225,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Fitur Tambah Kartu akan segera hadir",
-                            ),
-                          ),
-                        );
-                      },
+                      onPressed: _showAddMethodDialog,
                       icon: const Icon(Icons.add, size: 18),
                       label: const Text("Tambah Metode Pembayaran"),
                       style: OutlinedButton.styleFrom(
@@ -136,66 +244,15 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   _buildSectionHeader(Icons.phone_android, "E-Wallet"),
                   const SizedBox(height: 12),
                   if (eWallets.isEmpty) _buildEmptyState(),
-                  ...eWallets.asMap().entries.map((entry) {
-                    return _buildCardItem(entry.value, 'wallet', entry.key);
-                  }),
+                  ...eWallets.map((item) => _buildCardItem(item)).toList(),
 
                   const SizedBox(height: 24),
 
                   _buildSectionHeader(Icons.account_balance, "Transfer Bank"),
                   const SizedBox(height: 12),
                   if (banks.isEmpty) _buildEmptyState(),
-                  ...banks.asMap().entries.map((entry) {
-                    return _buildCardItem(entry.value, 'bank', entry.key);
-                  }),
+                  ...banks.map((item) => _buildCardItem(item)).toList(),
 
-                  const SizedBox(height: 24),
-
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.grey.shade300,
-                        style: BorderStyle.solid,
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.credit_card,
-                          color: Colors.grey.shade600,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Metode pembayaran aman",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: Colors.grey.shade800,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "Data kartu dan akun Anda terenkripsi dan aman. Kami tidak menyimpan informasi sensitif.",
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: 30),
                 ],
               ),
@@ -220,22 +277,37 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     );
   }
 
-  Widget _buildCardItem(Map<String, dynamic> data, String type, int index) {
+  Widget _buildCardItem(Map<String, dynamic> data) {
+    String id = data['id'].toString();
     String name = data['name'] ?? 'Metode';
-    String detail = data['detail'] ?? '****';
-    bool isMain = (data['is_default'] == '1');
+    double balance = double.tryParse(data['balance'].toString()) ?? 0.0;
+    String imgUrl = data['image_url'] ?? '';
 
-    IconData icon = Icons.credit_card;
-    Color color = Colors.grey;
-    if (name.toLowerCase().contains('gopay')) {
-      icon = Icons.account_balance_wallet;
-      color = Colors.green;
-    } else if (name.toLowerCase().contains('ovo')) {
-      icon = Icons.monetization_on;
-      color = Colors.purple;
-    } else if (name.toLowerCase().contains('bca')) {
-      icon = Icons.account_balance;
-      color = Colors.blue;
+    Widget iconWidget;
+    if (imgUrl.isNotEmpty && imgUrl.startsWith('http')) {
+      iconWidget = Image.network(
+        imgUrl,
+        width: 24,
+        height: 24,
+        errorBuilder: (c, e, s) =>
+            const Icon(Icons.credit_card, color: Colors.grey),
+      );
+    } else {
+      IconData iconData = Icons.credit_card;
+      Color color = Colors.grey;
+      if (name.toLowerCase().contains('gopay')) {
+        iconData = Icons.account_balance_wallet;
+        color = Colors.green;
+      } else if (name.toLowerCase().contains('ovo')) {
+        iconData = Icons.monetization_on;
+        color = Colors.purple;
+      } else if (name.toLowerCase().contains('bca') ||
+          name.toLowerCase().contains('bank')) {
+        iconData = Icons.account_balance;
+        color = Colors.blue;
+      }
+
+      iconWidget = Icon(iconData, color: color, size: 24);
     }
 
     return Container(
@@ -260,56 +332,35 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               color: Colors.grey[50],
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: iconWidget,
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    if (isMain) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF5D4037),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          "Utama",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  detail,
-                  style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                  currencyFormat.format(balance),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ),
           IconButton(
             icon: Icon(Icons.delete_outline, color: Colors.grey[400]),
-            onPressed: () => _deleteMethod(type, index),
+            onPressed: () => _deleteMethod(id, 0),
           ),
         ],
       ),

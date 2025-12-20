@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kelompok6_sportareamanagement/screens/main_layout.dart';
 import '../services/auth_service.dart';
 import 'auth_screen.dart';
-// Import themeNotifier dari main.dart
-import '../main.dart'; 
+import '../main.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -18,7 +17,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Cek apakah sedang mode gelap untuk mengatur warna secara adaptif
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -70,11 +68,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 "Mode Gelap",
                 "Tampilan tema gelap",
                 isToggle: true,
-                // Gunakan nilai dari notifier global
                 val: themeNotifier.value == ThemeMode.dark,
                 onChanged: (v) {
                   setState(() {
-                    // Ubah tema aplikasi secara global
                     themeNotifier.value = v ? ThemeMode.dark : ThemeMode.light;
                   });
                 },
@@ -97,7 +93,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: const Icon(Icons.logout),
                 label: const Text("Keluar"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? Colors.red.withOpacity(0.1) : Colors.red[50],
+                  backgroundColor: isDark
+                      ? Colors.red.withOpacity(0.1)
+                      : Colors.red[50],
                   foregroundColor: Colors.red,
                   elevation: 0,
                   padding: const EdgeInsets.all(16),
@@ -124,7 +122,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
           ),
         ),
         Container(
@@ -161,17 +162,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: Text(
         title,
         style: TextStyle(
-          fontWeight: FontWeight.bold, 
+          fontWeight: FontWeight.bold,
           fontSize: 14,
           color: isDark ? Colors.white : Colors.black,
         ),
       ),
       subtitle: Text(
-        subtitle, 
+        subtitle,
         style: TextStyle(
           fontSize: 12,
           color: isDark ? Colors.grey : Colors.black54,
-        )
+        ),
       ),
       trailing: isToggle
           ? Switch(
@@ -179,7 +180,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: onChanged,
               activeColor: const Color(0xFF22c55e),
             )
-          : Icon(Icons.chevron_right, color: isDark ? Colors.grey : Colors.grey),
+          : Icon(
+              Icons.chevron_right,
+              color: isDark ? Colors.grey : Colors.grey,
+            ),
       onTap: isLink ? () {} : null,
     );
   }

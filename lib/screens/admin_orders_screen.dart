@@ -46,7 +46,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
     if (mounted) {
       Navigator.pop(context);
       if (success) {
-        Navigator.pop(context); // Tutup dialog detail
+        Navigator.pop(context);
         _loadData();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -159,7 +159,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
               ),
               const SizedBox(height: 20),
 
-              // FITUR: Aksi Admin berdasarkan tingkatan status (Hanya processing yang bisa dikonfirmasi)
               if (order['status'] == 'processing')
                 Row(
                   children: [
@@ -191,7 +190,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
                   ],
                 ),
 
-              // FITUR: Pesan informasi jika status masih pending
               if (order['status'] == 'pending')
                 const Center(
                   child: Padding(
@@ -242,7 +240,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
 
   @override
   Widget build(BuildContext context) {
-    // FITUR: Menghitung jumlah pesanan yang perlu tindakan (status processing)
     int pendingActionCount = orders
         .where((o) => o['status'] == 'processing')
         .length;
@@ -393,7 +390,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
         String statusText;
         IconData statusIcon;
 
-        // FITUR: Mapping Status Tingkatan Baru untuk Tampilan List
         switch (item['status']) {
           case 'pending':
             statusColor = Colors.redAccent;

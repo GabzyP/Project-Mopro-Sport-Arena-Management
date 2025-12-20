@@ -1,13 +1,23 @@
 <?php
 include 'koneksi.php';
-$user_id = $_GET['user_id'] ?? 0;
+header("Content-Type: application/json");
 
-$sql = "SELECT points, photo_profile, email, name FROM users WHERE id = '$user_id'";
+$user_id = $_GET['id'];
+
+$sql = "SELECT * FROM users WHERE id = '$user_id'";
 $result = $conn->query($sql);
 
-if ($row = $result->fetch_assoc()) {
-    echo json_encode(["status" => "success", "data" => $row]);
+if ($result->num_rows > 0) {
+    $row = $result->fetch_assoc();
+    
+    if ($row['saldo'] <= 0) {
+        $random_saldo = rand(500000, 2000000);
+        $conn->query("UPDATE users SET saldo = '$random_saldo' WHERE id = '$user_id'");
+        $row['saldo'] = $random_saldo;
+    }
+
+    echo json_encode($row);
 } else {
-    echo json_encode(["status" => "error", "message" => "User not found"]);
+    echo json_encode(["status" => "error", "message" => "User tidak ditemukan"]);
 }
 ?>

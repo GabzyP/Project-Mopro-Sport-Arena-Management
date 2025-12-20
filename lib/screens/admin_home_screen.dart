@@ -3,13 +3,15 @@ import '../services/api_service.dart';
 import 'venue_list_admin_screen.dart';
 import 'add_field_screen.dart';
 
-// --- SCREENS VERIFIKASI ---
 class VerificationScreen extends StatelessWidget {
   const VerificationScreen({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Verifikasi Booking', style: TextStyle(fontWeight: FontWeight.bold)),
+      title: const Text(
+        'Verifikasi Booking',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
       centerTitle: true,
       elevation: 0,
     ),
@@ -17,22 +19,31 @@ class VerificationScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.pending_actions_rounded, size: 80, color: Colors.grey.shade300),
+          Icon(
+            Icons.pending_actions_rounded,
+            size: 80,
+            color: Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
-          const Text('Belum ada verifikasi tertunda', style: TextStyle(color: Colors.grey, fontSize: 16)),
+          const Text(
+            'Belum ada verifikasi tertunda',
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+          ),
         ],
       ),
     ),
   );
 }
 
-// --- SCREENS LAPORAN ---
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Laporan & Analitik', style: TextStyle(fontWeight: FontWeight.bold)),
+      title: const Text(
+        'Laporan & Analitik',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
       centerTitle: true,
       elevation: 0,
     ),
@@ -42,20 +53,25 @@ class ReportsScreen extends StatelessWidget {
         children: [
           Icon(Icons.bar_chart_rounded, size: 80, color: Colors.grey.shade300),
           const SizedBox(height: 16),
-          const Text('Menyiapkan data analitik...', style: TextStyle(color: Colors.grey, fontSize: 16)),
+          const Text(
+            'Menyiapkan data analitik...',
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+          ),
         ],
       ),
     ),
   );
 }
 
-// --- SCREENS MANAJEMEN ---
 class UserManagementScreen extends StatelessWidget {
   const UserManagementScreen({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Manajemen Pengguna', style: TextStyle(fontWeight: FontWeight.bold)),
+      title: const Text(
+        'Manajemen Pengguna',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
       centerTitle: true,
       elevation: 0,
     ),
@@ -65,14 +81,16 @@ class UserManagementScreen extends StatelessWidget {
         children: [
           Icon(Icons.people_alt_rounded, size: 80, color: Colors.grey.shade300),
           const SizedBox(height: 16),
-          const Text('Daftar pengguna sedang dimuat', style: TextStyle(color: Colors.grey, fontSize: 16)),
+          const Text(
+            'Daftar pengguna sedang dimuat',
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+          ),
         ],
       ),
     ),
   );
 }
 
-// --- ADMIN HOME SCREEN ---
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
@@ -83,7 +101,7 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final Color primaryColor = const Color(0xFF22c55e);
   final Color secondaryColor = const Color(0xFFfacc15);
-  final Color bgColor = const Color(0xFFf8fafc); // Warna background lebih soft
+  final Color bgColor = const Color(0xFFf8fafc);
 
   bool isLoading = true;
 
@@ -132,7 +150,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header dengan Gradient dan Glassmorphism feel
             Container(
               padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
               decoration: BoxDecoration(
@@ -150,7 +167,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     color: primaryColor.withOpacity(0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
-                  )
+                  ),
                 ],
               ),
               child: Row(
@@ -184,7 +201,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.settings_suggest_rounded, color: Colors.white),
+                      icon: const Icon(
+                        Icons.settings_suggest_rounded,
+                        color: Colors.white,
+                      ),
                       onPressed: () {},
                     ),
                   ),
@@ -207,7 +227,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                   const SizedBox(height: 16),
                   isLoading
-                      ? Center(child: CircularProgressIndicator(color: primaryColor))
+                      ? Center(
+                          child: CircularProgressIndicator(color: primaryColor),
+                        )
                       : Row(
                           children: [
                             _buildAdminStatCard(
@@ -253,7 +275,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _buildAdminStatCard(String val, String label, Color bgColor, Color accentColor, IconData icon) {
+  Widget _buildAdminStatCard(
+    String val,
+    String label,
+    Color bgColor,
+    Color accentColor,
+    IconData icon,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -333,10 +361,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _actionItem(IconData icon, String title, Color color, Widget targetScreen) {
+  Widget _actionItem(
+    IconData icon,
+    String title,
+    Color color,
+    Widget targetScreen,
+  ) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => targetScreen));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => targetScreen),
+        );
       },
       child: Container(
         decoration: BoxDecoration(
@@ -388,9 +424,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             children: [
               const Text(
                 'Aktivitas Terbaru',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1e293b)),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1e293b),
+                ),
               ),
-              Icon(Icons.history_rounded, size: 20, color: Colors.grey.shade400),
+              Icon(
+                Icons.history_rounded,
+                size: 20,
+                color: Colors.grey.shade400,
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -412,7 +456,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _activityCard(String title, String subtitle, IconData icon, Color iconColor) {
+  Widget _activityCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color iconColor,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -436,12 +485,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0f172a)),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: Color(0xFF0f172a),
+                ),
               ),
             ],
           ),

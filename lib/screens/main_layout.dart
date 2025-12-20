@@ -4,7 +4,6 @@ import 'home_screen.dart';
 import 'booking_screen.dart';
 import 'profile_screen.dart';
 
-
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() {
@@ -16,29 +15,32 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 2. Bungkus MaterialApp dengan ValueListenableBuilder
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (_, mode, __) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Arena Sport',
-          themeMode: mode, // Ini yang mengontrol tema aplikasi
-          
-          // TEMA TERANG
+          themeMode: mode,
+
           theme: ThemeData(
             brightness: Brightness.light,
             primaryColor: const Color(0xFF22c55e),
             scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-            appBarTheme: const AppBarTheme(backgroundColor: Colors.white, foregroundColor: Colors.black),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
           ),
-          
-          // TEMA GELAP
+
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primaryColor: const Color(0xFF22c55e),
             scaffoldBackgroundColor: const Color(0xFF121212),
-            appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF1E1E1E), foregroundColor: Colors.white),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF1E1E1E),
+              foregroundColor: Colors.white,
+            ),
             cardColor: const Color(0xFF1E1E1E),
           ),
           home: const MainLayout(),
@@ -47,6 +49,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
 

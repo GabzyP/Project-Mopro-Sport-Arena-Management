@@ -11,28 +11,27 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
   final Color headerColor = const Color(0xFF3E2723);
   final Color primaryGreen = const Color(0xFF22c55e);
 
-  // Simulasi data iklan/promo
   List<Map<String, dynamic>> ads = [
     {
       'title': 'Promo Akhir Tahun',
       'desc': 'Diskon 30% untuk semua booking',
       'is_active': true,
       'views': 1234,
-      'clicks': 89
+      'clicks': 89,
     },
     {
       'title': 'Member Baru',
       'desc': 'Gratis 1 jam untuk member baru',
       'is_active': true,
       'views': 856,
-      'clicks': 45
+      'clicks': 45,
     },
     {
       'title': 'Weekend Special',
       'desc': 'Harga spesial akhir pekan',
       'is_active': false,
       'views': 432,
-      'clicks': 12
+      'clicks': 12,
     },
   ];
 
@@ -42,7 +41,9 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Hapus Iklan"),
-        content: Text("Apakah Anda yakin ingin menghapus '${ads[index]['title']}'?"),
+        content: Text(
+          "Apakah Anda yakin ingin menghapus '${ads[index]['title']}'?",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -65,7 +66,6 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
     );
   }
 
-  // FUNGSI UNTUK MENAMPILKAN FORM TAMBAH IKLAN
   void _showAddAdSheet() {
     final TextEditingController titleController = TextEditingController();
     final TextEditingController descController = TextEditingController();
@@ -115,7 +115,8 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: primaryGreen),
                 onPressed: () {
-                  if (titleController.text.isNotEmpty && descController.text.isNotEmpty) {
+                  if (titleController.text.isNotEmpty &&
+                      descController.text.isNotEmpty) {
                     setState(() {
                       ads.insert(0, {
                         'title': titleController.text,
@@ -128,7 +129,10 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
                     Navigator.pop(context);
                   }
                 },
-                child: const Text("Simpan Iklan", style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  "Simpan Iklan",
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -144,7 +148,6 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
-          // Header Area
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
@@ -159,49 +162,66 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Kelola Iklan",
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    const Text(
+                      "Kelola Iklan",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text("Buat & kelola promo",
-                        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14)),
+                    Text(
+                      "Buat & kelola promo",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
 
-          // Tombol Buat Iklan Baru
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton.icon(
-                onPressed: _showAddAdSheet, // DIHUBUNGKAN KE FUNGSI TAMBAH
+                onPressed: _showAddAdSheet,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryGreen,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 0,
                 ),
                 icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text("Buat Iklan Baru",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                label: const Text(
+                  "Buat Iklan Baru",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
               ),
             ),
           ),
 
-          // List Iklan
           Expanded(
-            child: ads.isEmpty 
-              ? const Center(child: Text("Belum ada iklan tersedia"))
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: ads.length,
-                  itemBuilder: (context, index) {
-                    final ad = ads[index];
-                    return _buildAdCard(ad, index);
-                  },
-                ),
+            child: ads.isEmpty
+                ? const Center(child: Text("Belum ada iklan tersedia"))
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: ads.length,
+                    itemBuilder: (context, index) {
+                      final ad = ads[index];
+                      return _buildAdCard(ad, index);
+                    },
+                  ),
           ),
         ],
       ),
@@ -218,7 +238,11 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -229,17 +253,30 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
             children: [
               Row(
                 children: [
-                  Text(ad['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  Text(
+                    ad['title'],
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
                   const SizedBox(width: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: isActive ? primaryGreen : Colors.grey.shade700,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       isActive ? "Aktif" : "Nonaktif",
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -255,7 +292,10 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
             ],
           ),
           const SizedBox(height: 4),
-          Text(ad['desc'], style: const TextStyle(color: Colors.grey, fontSize: 14)),
+          Text(
+            ad['desc'],
+            style: const TextStyle(color: Colors.grey, fontSize: 14),
+          ),
           const SizedBox(height: 16),
           const Divider(height: 1),
           const SizedBox(height: 16),
@@ -264,19 +304,29 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.visibility_outlined, size: 18, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.visibility_outlined,
+                    size: 18,
+                    color: Colors.grey.shade600,
+                  ),
                   const SizedBox(width: 6),
-                  Text("${ad['views']} views", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                  Text(
+                    "${ad['views']} views",
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  ),
                   const SizedBox(width: 20),
-                  Text("${ad['clicks']} clicks", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                  Text(
+                    "${ad['clicks']} clicks",
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  ),
                 ],
               ),
               IconButton(
-                onPressed: () => _deleteAd(index), // DIHUBUNGKAN KE FUNGSI HAPUS
+                onPressed: () => _deleteAd(index),
                 icon: const Icon(Icons.delete_outline, color: Colors.red),
-              )
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
