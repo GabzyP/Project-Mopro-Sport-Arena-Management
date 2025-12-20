@@ -28,23 +28,31 @@ class Venue {
   factory Venue.fromJson(Map<String, dynamic> json) {
     List<String> parsedSports = [];
     if (json['sport_type'] != null) {
-      parsedSports = json['sport_type'].toString().split(',');
+      parsedSports = json['sport_type']
+          .toString()
+          .split(',')
+          .map((e) => e.trim())
+          .toList();
     } else {
       parsedSports = ['general'];
+    }
+    String safeTime(String? time) {
+      String t = (time ?? '00:00').toString();
+      return t.length >= 5 ? t.substring(0, 5) : t;
     }
 
     return Venue(
       id: json['id'].toString(),
-      name: json['name'],
+      name: json['name'] ?? 'No Name',
       address: json['address'] ?? 'Lokasi belum tersedia',
       imageUrl: json['image_url'] ?? 'https://via.placeholder.com/300',
       rating: double.tryParse((json['rating'] ?? '0').toString()) ?? 0.0,
-      openTime: (json['open_time'] ?? '08:00').toString().substring(0, 5),
-      closeTime: (json['close_time'] ?? '22:00').toString().substring(0, 5),
+      openTime: safeTime(json['open_time']),
+      closeTime: safeTime(json['close_time']),
       minPrice: double.tryParse((json['min_price'] ?? '0').toString()) ?? 0.0,
       sportTypes: parsedSports,
-      latitude: double.tryParse(json['latitude'].toString()) ?? 0.0,
-      longitude: double.tryParse(json['longitude'].toString()) ?? 0.0,
+      latitude: double.tryParse((json['latitude'] ?? '0').toString()) ?? 0.0,
+      longitude: double.tryParse((json['longitude'] ?? '0').toString()) ?? 0.0,
     );
   }
 }
@@ -69,11 +77,17 @@ class Field {
   factory Field.fromJson(Map<String, dynamic> json) {
     return Field(
       id: json['id'].toString(),
-      name: json['name'],
+      name: json['name'] ?? 'Lapangan',
       sportType: json['sport_type'] ?? 'general',
-      pricePerHour: double.parse((json['price_per_hour'] ?? 0).toString()),
+      pricePerHour:
+          double.tryParse((json['price_per_hour'] ?? '0').toString()) ?? 0.0,
       imageUrl: json['image_url'] ?? 'https://via.placeholder.com/150',
-      facilities: (json['facilities'] as String?)?.split(',') ?? [],
+      facilities:
+          (json['facilities'] as String?)
+              ?.split(',')
+              .map((e) => e.trim())
+              .toList() ??
+          [],
     );
   }
 }

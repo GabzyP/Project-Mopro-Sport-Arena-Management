@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/venue_model.dart';
 import '../services/api_service.dart';
 import 'payment_screen.dart';
@@ -19,6 +21,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   Map<String, dynamic> bookedSlots = {};
   List<String> userSelectedSlots = [];
   bool isLoading = true;
+  bool isSlotLoading = false;
   bool isLiked = false;
 
   final Color primaryColor = const Color(0xFF22c55e);
@@ -27,48 +30,77 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _loadFields();
+    initializeDateFormatting('id_ID', null).then((_) {
+      _loadFields();
+    });
   }
 
-  void _loadFields() async {
-    final data = await ApiService.getFields(widget.venue.id);
-    if (mounted) {
-      setState(() {
-        fields = data;
-        isLoading = false;
-        if (fields.isNotEmpty) {
-          selectedField = fields[0];
-          _checkSlots();
-        }
-      });
+  Future<void> _loadFields() async {
+    try {
+      final data = await ApiService.getFields(widget.venue.id);
+      if (mounted) {
+        setState(() {
+          fields = data;
+          isLoading = false;
+          if (fields.isNotEmpty) {
+            selectedField = fields[0];
+            _checkSlots();
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Gagal: $e")));
+      }
     }
   }
 
-  void _checkSlots() async {
+  Future<void> _checkSlots() async {
     if (selectedField == null) return;
-
     setState(() {
+      isSlotLoading = true;
       userSelectedSlots.clear();
       bookedSlots = {};
     });
 
-    String dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
-    final slots = await ApiService.checkAvailability(
-      selectedField!.id,
-      dateStr,
-    );
-
-    if (mounted) {
-      setState(() {
-        bookedSlots = slots;
-      });
+    try {
+      String dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+      final slots = await ApiService.checkAvailability(
+        selectedField!.id,
+        dateStr,
+      );
+      if (mounted) {
+        setState(() {
+          bookedSlots = slots;
+          isSlotLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => isSlotLoading = false);
     }
   }
 
   List<String> _generateTimeSlots() {
-    int startHour = int.parse(widget.venue.openTime.split(':')[0]);
-    int endHour = int.parse(widget.venue.closeTime.split(':')[0]);
-
+    int startHour = 8;
+    int endHour = 22;
+    try {
+      if (widget.venue.openTime.contains(':')) {
+        startHour = int.parse(widget.venue.openTime.split(':')[0]);
+      }
+      if (widget.venue.closeTime.contains(':')) {
+        endHour = int.parse(widget.venue.closeTime.split(':')[0]);
+      }
+      if (endHour <= startHour) {
+        startHour = 8;
+        endHour = 22;
+      }
+    } catch (e) {
+      startHour = 8;
+      endHour = 22;
+    }
     List<String> slots = [];
     for (int i = startHour; i < endHour; i++) {
       slots.add("${i.toString().padLeft(2, '0')}:00");
@@ -87,6 +119,62 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   double get totalPrice {
     if (selectedField == null) return 0;
     return selectedField!.pricePerHour * userSelectedSlots.length;
+  }
+
+  void _navigateToPayment() async {
+    if (userSelectedSlots.isEmpty) return;
+
+    setState(() => isSlotLoading = true);
+
+    userSelectedSlots.sort();
+    String startTime = userSelectedSlots.first;
+    String lastSlot = userSelectedSlots.last;
+    int lastHour = int.parse(lastSlot.split(':')[0]);
+    String endTime = "${(lastHour + 1).toString().padLeft(2, '0')}:00";
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId') ?? '';
+
+    try {
+      final result = await ApiService.lockBooking(
+        userId: userId,
+        fieldId: selectedField!.id,
+        date: DateFormat('yyyy-MM-dd').format(selectedDate),
+        startTime: startTime,
+        endTime: endTime,
+        totalPrice: totalPrice,
+      );
+
+      setState(() => isSlotLoading = false);
+
+      if (result['status'] == 'success') {
+        String bookingId = result['booking_id'].toString();
+        String bookingCode = result['booking_code'].toString();
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentScreen(
+              field: selectedField!,
+              date: selectedDate,
+              startTime: startTime,
+              endTime: endTime,
+              bookingId: bookingId,
+              bookingCode: bookingCode,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result['message'])));
+      }
+    } catch (e) {
+      setState(() => isSlotLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
   }
 
   @override
@@ -117,7 +205,12 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(widget.venue.imageUrl, fit: BoxFit.cover),
+                      Image.network(
+                        widget.venue.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Container(color: Colors.grey.shade300),
+                      ),
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -171,7 +264,6 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   ),
                 ),
               ),
-
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -188,11 +280,12 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                       const SizedBox(height: 10),
                       if (isLoading)
                         const Center(child: CircularProgressIndicator())
+                      else if (fields.isEmpty)
+                        const Text("Belum ada lapangan tersedia.")
                       else
                         ...fields.map((field) => _buildFieldCard(field)),
 
                       const SizedBox(height: 20),
-
                       if (selectedField != null) ...[
                         const Text(
                           "Pilih Tanggal",
@@ -203,21 +296,19 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                         ),
                         const SizedBox(height: 10),
                         _buildDatePicker(),
-
                         const SizedBox(height: 20),
-
-                        Row(
+                        Wrap(
+                          alignment: WrapAlignment.start,
+                          spacing: 12,
+                          runSpacing: 8,
                           children: [
                             _buildLegendItem(
                               Colors.white,
                               "Tersedia",
                               border: true,
                             ),
-                            const SizedBox(width: 12),
-                            _buildLegendItem(Colors.amber.shade100, "Diproses"),
-                            const SizedBox(width: 12),
+                            _buildLegendItem(Colors.amber.shade100, "Menunggu"),
                             _buildLegendItem(Colors.red.shade100, "Terpesan"),
-                            const SizedBox(width: 12),
                             _buildLegendItem(
                               primaryColor,
                               "Dipilih",
@@ -226,16 +317,22 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                           ],
                         ),
                         const SizedBox(height: 12),
-
-                        Text(
+                        const Text(
                           "Pilih Waktu",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
                         ),
                         const SizedBox(height: 10),
-                        _buildTimeGrid(),
+                        isSlotLoading
+                            ? const Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              )
+                            : _buildTimeGrid(),
                         const SizedBox(height: 100),
                       ],
                     ],
@@ -244,7 +341,6 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               ),
             ],
           ),
-
           if (selectedField != null)
             Positioned(
               bottom: 0,
@@ -252,13 +348,13 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               right: 0,
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black12,
                       blurRadius: 10,
-                      offset: const Offset(0, -5),
+                      offset: Offset(0, -5),
                     ),
                   ],
                 ),
@@ -288,19 +384,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                     ElevatedButton(
                       onPressed: userSelectedSlots.isEmpty
                           ? null
-                          : () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => PaymentScreen(
-                                    field: selectedField!,
-                                    venueName: widget.venue.name,
-                                    date: selectedDate,
-                                    slots: userSelectedSlots,
-                                  ),
-                                ),
-                              );
-                            },
+                          : _navigateToPayment,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,
                         padding: const EdgeInsets.symmetric(
@@ -350,8 +434,10 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     bool isSelected = selectedField?.id == field.id;
     return GestureDetector(
       onTap: () {
-        setState(() => selectedField = field);
-        _checkSlots();
+        if (selectedField?.id != field.id) {
+          setState(() => selectedField = field);
+          _checkSlots();
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
@@ -494,6 +580,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     Color textColor = Colors.black,
   }) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 12,
@@ -512,10 +599,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
   Widget _buildTimeGrid() {
     List<String> timeSlots = _generateTimeSlots();
-
-    if (timeSlots.isEmpty) {
-      return const Center(child: Text("Tidak ada jadwal tersedia"));
-    }
+    if (timeSlots.isEmpty)
+      return const Center(child: Text("Jadwal operasional tidak tersedia"));
 
     return GridView.builder(
       shrinkWrap: true,
@@ -534,6 +619,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
         Color bgColor;
         Color txtColor;
+        bool isClickable = false;
 
         if (status == 'booked') {
           bgColor = Colors.red.shade100;
@@ -544,14 +630,16 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         } else if (isSelected) {
           bgColor = primaryColor;
           txtColor = Colors.white;
+          isClickable = true;
         } else {
           bgColor = Colors.white;
           txtColor = Colors.black;
+          isClickable = true;
         }
 
         return GestureDetector(
           onTap: () {
-            if (status != 'available') return;
+            if (!isClickable) return;
             setState(() {
               isSelected
                   ? userSelectedSlots.remove(timeLabel)

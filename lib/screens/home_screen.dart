@@ -234,7 +234,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // --- FILTER OLAHRAGA (TETAP ADA) ---
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),

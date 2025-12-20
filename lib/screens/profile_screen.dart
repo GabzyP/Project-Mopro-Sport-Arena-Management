@@ -209,18 +209,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
 
-                  // Jarak pengganti kartu statistik agar menu tidak naik ke area hijau
                   const SizedBox(height: 50),
 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
                       children: [
-                        // Metode Pembayaran diturunkan ke sini
                         _buildMenuTile(
                           Icons.payment,
                           "Metode Pembayaran",
-                          badge: "2 Kartu", // Contoh badge statis
                           onTap: () {
                             Navigator.push(
                               context,
@@ -235,7 +232,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildMenuTile(
                           Icons.notifications_outlined,
                           "Notifikasi",
-                          badge: "3 Baru", // Contoh badge statis
                           onTap: () {
                             Navigator.push(
                               context,

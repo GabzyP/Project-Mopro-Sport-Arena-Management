@@ -1,13 +1,22 @@
 <?php
 include 'koneksi.php';
-$user_id = $_GET['user_id'] ?? 0;
 
-$sql = "SELECT * FROM saved_payment_methods WHERE user_id = '$user_id'";
-$result = $conn->query($sql);
+$user_id = $_GET['user_id'];
 
-$data = [];
+if (!$user_id) {
+    echo json_encode([]);
+    exit;
+}
+
+$stmt = $conn->prepare("SELECT * FROM payment_methods WHERE user_id = ? ORDER BY id DESC");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+$data = array();
 while ($row = $result->fetch_assoc()) {
     $data[] = $row;
 }
+
 echo json_encode($data);
 ?>
