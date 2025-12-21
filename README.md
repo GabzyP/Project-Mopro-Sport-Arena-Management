@@ -1,10 +1,10 @@
-# 🏟️ Sport Arena Management - Kelompok 6
+## 🏟️ Sport Arena Management - Kelompok 6
 
 **Proyek Pemrograman Mobile Kom A 24**
 
----
+## 👥 Anggota Kelompok 
 
-## 👥 Anggota Kelompok (Nama - NIM)
+---
 
 | No | Nama Mahasiswa | NIM | Github |
 | :--- | :--- | :--- | :--- |
@@ -18,6 +18,8 @@
 
 ## 📱 Deskripsi Singkat Aplikasi
 
+---
+
 **Sport Arena Management** adalah aplikasi *mobile* berbasis Flutter yang dirancang untuk mendigitalisasi proses reservasi lapangan olahraga. Aplikasi ini menghubungkan penyedia lapangan (Admin) dengan pelanggan (Customer) dalam satu ekosistem yang terintegrasi, menyelesaikan masalah booking manual yang rentan kesalahan dan tidak efisien.
 
 Dengan fitur **Real-time Availability**, **Smart Locking System**, dan **Auto-Refund**, aplikasi ini menjamin pengalaman booking yang adil, cepat, dan transparan bagi semua pengguna.
@@ -26,7 +28,9 @@ Dengan fitur **Real-time Availability**, **Smart Locking System**, dan **Auto-Re
 
 ## ✨ Daftar Fitur
 
-### 👤 Customer (Pengguna)
+---
+
+### 👤 Customer
 1.  **Smart Booking System**:
     *   Melihat jadwal lapangan secara *real-time*.
     *   **Locking Mechanism**: Slot waktu yang dipilih akan "dikunci" selama 10 menit untuk mencegah *double booking*.
@@ -35,7 +39,7 @@ Dengan fitur **Real-time Availability**, **Smart Locking System**, dan **Auto-Re
     *   Setiap transaksi memberikan XP.
     *   Naik level (Bronze -> Silver -> Gold) memberikan diskon khusus (hingga 10%).
 3.  **Metode Pembayaran (Simulasi)**:
-    *   E-Wallet (GoPay, OVO, Dana) dan Transfer Bank/VA.
+    *   E-Wallet (GoPay, OVO, Dana) dan Transfer Bank.
     *   Saldo berkurang otomatis (Immediate Deduction) saat pembayaran.
 4.  **Pencarian & Lokasi**:
     *   Filter venue berdasarkan jenis olahraga (Futsal, Badminton, Basket).
@@ -43,7 +47,7 @@ Dengan fitur **Real-time Availability**, **Smart Locking System**, dan **Auto-Re
 5.  **Notifikasi Sistem**: Pemberitahuan status booking, promo, dan refund.
 6.  **Manajemen Profil**: Update foto, password, dan melihat riwayat transaksi.
 
-### 🛡️ Admin (Pengelola)
+### 🛡️ Admin 
 1.  **Dashboard Statistik Real-time**:
     *   Memantau total pendapatan harian/bulanan.
     *   Grafik tren pemesanan (`fl_chart`).
@@ -56,6 +60,8 @@ Dengan fitur **Real-time Availability**, **Smart Locking System**, dan **Auto-Re
 ---
 
 ## 🛠️ Technical Stack Application
+
+---
 
 ### **Frontend (Mobile)**
 *   **Framework**: Flutter **3.38.1** (Channel Stable)
@@ -75,13 +81,20 @@ Dengan fitur **Real-time Availability**, **Smart Locking System**, dan **Auto-Re
 *   **Bahasa**: PHP Native (Versi 8.x via XAMPP)
 *   **Database**: MySQL / MariaDB (via XAMPP)
 *   **Server**: Apache Web Server
-*   **Tools**: phpMyAdmin for Database Managementsi ini di lingkungan lokal (Dev Environment).
+*   **Tools**: phpMyAdmin for Database Managements ini di lingkungan lokal (Dev Environment).
+
+---
+
+### 🚗 How To Run Application
+
+---
 
 ### 0. Setup Repository
 
-```dart
-    git clone https://github.com/GabzyP/Project-Mopro-Sport-Arena-Management.git
-    ```
+```bash
+git clone https://github.com/GabzyP/Project-Mopro-Sport-Arena-Management.git
+cd Project-Mopro-Sport-Arena-Management
+```
 
 ### 1. Setup Backend (Database & Server)
 1.  Pastikan **XAMPP** terinstall. Jalankan service **Apache** dan **MySQL**.
@@ -92,7 +105,7 @@ Dengan fitur **Real-time Availability**, **Smart Locking System**, dan **Auto-Re
     *   Windows: `C:\xampp\htdocs\arena_sport`
     *   Pastikan struktur file: `htdocs/arena_sport/config/koneksi.php` valid.
 
-### 2. Konfigurasi Koneksi (PENTING!)
+### 2. Konfigurasi Koneksi
 Agar HP/Emulator bisa mengakses server laptop, kita perlu mengarahkan ke IP Address yang benar (bukan `localhost`).
 1.  Buka CMD/Terminal, ketik `ipconfig` (Windows) atau `ifconfig` (Mac/Linux).
 2.  Salin **IPv4 Address** Contoh: `192.168.1.15`.
@@ -117,3 +130,62 @@ Agar HP/Emulator bisa mengakses server laptop, kita perlu mengarahkan ke IP Addr
     ```bash
     flutter run
     ```
+
+---
+
+## Struktur Proyek
+
+```bash
+project-root/ 
+├── arena_sport/ # 🗄️ BACKEND (PHP Scripts)  
+   ├── admin/ # API khusus fitur Admin (Ads, Stats, Venue) 
+   ├── ads/ # API manajemen iklan  
+   ├── auth/ # API Login, Register, Update Profile  
+   ├── booking/ # Logika pemesanan & cek ketersediaan  
+   ├── config/ # Koneksi database (koneksi.php)  
+   ├── payment/ # Logika pembayaran & Top Up  
+   ├── rewards/ # Sistem XP dan Rewards  
+   ├── user/ # API data user & notifikasi  
+   └── venue/ # CRUD data lapangan/venue  
+├── lib/ # 📱 FRONTEND (Flutter Code)    
+   ├── models/ # Data Models (Booking, Venue, User)  
+   ├── screens/ # Halaman UI Aplikasi  
+      ├── admin/ # Halaman dashboard & menu Admin  
+      ├── auth/ # Halaman Login & Register  
+      ├── booking/ # Halaman booking & pembayaran  
+      ├── home/ # Halaman utama Customer  
+      ├── profile/ # Halaman profil & settings  
+      └── venue/ # Halaman detail & lokasi venue 
+   ├── services/ # Logika komunikasi API (AuthService, ApiService)  
+   ├── widgets/ # Komponen UI reusable (Cards, Buttons) 
+   └── main.dart # Entry point aplikasi 
+   └── arena_sport.sql # File Database Import
+```
+
+---
+
+## Akun Testing
+
+| Email | Password | Role |
+| :--- | :--- | :--- |
+| gabzy@gmail.com | 111111 | Customer | 
+| admin@arena.com | 123456 | Admin | 
+
+---
+
+## Video Demo
+
+```bash
+https://drive.google.com/drive/folders/1-tjoklhx4fgB7G6v4kD998CMW24xqo-T?usp=sharing
+```
+
+---
+
+## Catatan
+
+```bash
+program ini sudah diperbaiki jauh lebih baik dibanding saat presentasi yang masih banyak fitur tidak terhubung ke database,
+semoga dengan perbaikan ini penilaian bapak dapat lebih baik 
+🥰💖 Terimakasih pak Rendra
+```
+
