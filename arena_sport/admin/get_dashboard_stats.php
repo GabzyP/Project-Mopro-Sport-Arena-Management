@@ -1,5 +1,5 @@
 <?php
-include 'koneksi.php';
+include '../config/koneksi.php';
 
 $sql_revenue = "SELECT SUM(total_price) as total FROM bookings WHERE status = 'completed'";
 $revenue = $conn->query($sql_revenue)->fetch_assoc()['total'] ?? 0;

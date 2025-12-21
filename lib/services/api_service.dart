@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:io';
-import '../models/venue_model.dart';
-import '../models/booking_model.dart';
+import 'package:kelompok6_sportareamanagement/models/venue_model.dart';
+import 'package:kelompok6_sportareamanagement/models/booking_model.dart';
 
 class ApiService {
   static const String baseUrl = 'http://192.168.18.10/arena_sport';
@@ -13,7 +13,7 @@ class ApiService {
   }) async {
     try {
       final uri = Uri.parse(
-        '$baseUrl/get_venues.php',
+        '$baseUrl/venue/get_venues.php',
       ).replace(queryParameters: {'category': category, 'search': query});
 
       final response = await http.get(uri);
@@ -32,7 +32,7 @@ class ApiService {
   static Future<List<Field>> getFields(String venueId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get_fields.php?venue_id=$venueId'),
+        Uri.parse('$baseUrl/venue/get_fields.php?venue_id=$venueId'),
       );
 
       if (response.statusCode == 200) {
@@ -52,7 +52,7 @@ class ApiService {
   ) async {
     try {
       final url =
-          '$baseUrl/check_availability.php?field_id=$fieldId&date=$date';
+          '$baseUrl/booking/check_availability.php?field_id=$fieldId&date=$date';
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         return Map<String, dynamic>.from(json.decode(response.body));
@@ -67,7 +67,7 @@ class ApiService {
   static Future<List<Booking>> getMyBookings() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get_my_bookings.php'),
+        Uri.parse('$baseUrl/booking/get_my_bookings.php'),
       );
 
       if (response.statusCode == 200) {
@@ -83,7 +83,9 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getHomeStats() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/get_home_stats.php'));
+      final response = await http.get(
+        Uri.parse('$baseUrl/user/get_home_stats.php'),
+      );
       if (response.statusCode == 200) {
         return Map<String, dynamic>.from(json.decode(response.body));
       }
@@ -105,7 +107,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/create_booking.php'),
+        Uri.parse('$baseUrl/booking/create_booking.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'user_id': userId,
@@ -132,7 +134,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/add_field.php'),
+        Uri.parse('$baseUrl/venue/add_field.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'venue_id': venueId,
@@ -155,7 +157,9 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getAdminDashboardData() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/get_admin_data.php'));
+      final response = await http.get(
+        Uri.parse('$baseUrl/admin/get_admin_data.php'),
+      );
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
@@ -172,7 +176,7 @@ class ApiService {
   ) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/update_order_status.php'),
+        Uri.parse('$baseUrl/admin/update_order_status.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'id': orderId, 'status': newStatus}),
       );
@@ -185,7 +189,7 @@ class ApiService {
   static Future<bool> updateUserStatus(String userId, String newStatus) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/update_user_status.php'),
+        Uri.parse('$baseUrl/admin/update_user_status.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'id': userId, 'status': newStatus}),
       );
@@ -202,7 +206,7 @@ class ApiService {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/update_photo.php'),
+        Uri.parse('$baseUrl/auth/update_photo.php'),
       );
 
       request.fields['user_id'] = userId;
@@ -232,7 +236,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getUserDetails(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get_user_details.php?user_id=$userId'),
+        Uri.parse('$baseUrl/user/get_user_details.php?user_id=$userId'),
       );
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -246,7 +250,7 @@ class ApiService {
   static Future<List<dynamic>> getNotifications(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get_notifications.php?user_id=$userId'),
+        Uri.parse('$baseUrl/user/get_notifications.php?user_id=$userId'),
       );
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -260,7 +264,7 @@ class ApiService {
   static Future<List<dynamic>> getSavedPaymentMethods(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get_payment_methods.php?user_id=$userId'),
+        Uri.parse('$baseUrl/payment/get_payment_methods.php?user_id=$userId'),
       );
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -274,7 +278,7 @@ class ApiService {
   static Future<List<dynamic>> getUserBookings(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get_user_bookings.php?user_id=$userId'),
+        Uri.parse('$baseUrl/booking/get_user_bookings.php?user_id=$userId'),
       );
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -289,7 +293,7 @@ class ApiService {
   static Future<List<dynamic>> getUserReviews(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get_my_reviews.php?user_id=$userId'),
+        Uri.parse('$baseUrl/venue/get_my_reviews.php?user_id=$userId'),
       );
       if (response.statusCode == 200) return json.decode(response.body);
       return [];
@@ -306,7 +310,7 @@ class ApiService {
     required String imageUrl,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/add_payment_method.php'),
+      Uri.parse('$baseUrl/payment/add_payment_method.php'),
       body: {
         'user_id': userId,
         'name': name,
@@ -322,7 +326,7 @@ class ApiService {
     String methodId,
   ) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/delete_payment_method.php'),
+      Uri.parse('$baseUrl/payment/delete_payment_method.php'),
       body: {'id': methodId},
     );
     return json.decode(response.body);
@@ -333,7 +337,7 @@ class ApiService {
     required double amount,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/top_up.php'),
+      Uri.parse('$baseUrl/payment/top_up.php'),
       body: {'id': methodId, 'amount': amount.toString()},
     );
     return json.decode(response.body);
@@ -349,7 +353,7 @@ class ApiService {
     String? rewardId,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/create_booking.php'),
+      Uri.parse('$baseUrl/booking/create_booking.php'),
       body: jsonEncode({
         'user_id': userId,
         'field_id': fieldId,
@@ -369,7 +373,7 @@ class ApiService {
     required String paymentMethodId,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/pay_booking.php'),
+      Uri.parse('$baseUrl/booking/pay_booking.php'),
       body: jsonEncode({
         'booking_id': bookingId,
         'user_id': userId,
@@ -395,7 +399,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/add_review.php'),
+        Uri.parse('$baseUrl/venue/add_review.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'user_id': userId,
@@ -418,7 +422,7 @@ class ApiService {
   ) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/favorite.php'),
+        Uri.parse('$baseUrl/user/favorite.php'),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {'action': 'toggle', 'user_id': userId, 'venue_id': venueId},
       );
@@ -432,7 +436,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse(
-          '$baseUrl/favorite.php?action=check&user_id=$userId&venue_id=$venueId',
+          '$baseUrl/user/favorite.php?action=check&user_id=$userId&venue_id=$venueId',
         ),
       );
       if (response.statusCode == 200) {
@@ -448,7 +452,7 @@ class ApiService {
   static Future<List<Venue>> getUserFavorites(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/favorite.php?action=list&user_id=$userId'),
+        Uri.parse('$baseUrl/user/favorite.php?action=list&user_id=$userId'),
       );
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = json.decode(response.body);
@@ -471,7 +475,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/update_profile.php'),
+        Uri.parse('$baseUrl/auth/update_profile.php'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_id': userId,
@@ -493,7 +497,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/change_password.php'),
+        Uri.parse('$baseUrl/auth/change_password.php'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_id': userId,
@@ -514,7 +518,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/redeem_reward.php'),
+        Uri.parse('$baseUrl/rewards/redeem_reward.php'),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {
           'user_id': userId,
@@ -531,7 +535,7 @@ class ApiService {
   static Future<List<dynamic>> getRewardHistory(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get_reward_history.php?user_id=$userId'),
+        Uri.parse('$baseUrl/rewards/get_reward_history.php?user_id=$userId'),
       );
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -545,7 +549,7 @@ class ApiService {
   static Future<List<dynamic>> getMyRewards(String userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get_my_rewards.php?user_id=$userId'),
+        Uri.parse('$baseUrl/rewards/get_my_rewards.php?user_id=$userId'),
       );
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -558,7 +562,9 @@ class ApiService {
 
   static Future<Map<String, dynamic>> getAdminSettings() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/get_settings.php'));
+      final response = await http.get(
+        Uri.parse('$baseUrl/admin/get_settings.php'),
+      );
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
@@ -571,7 +577,7 @@ class ApiService {
   static Future<bool> updateAdminSettings(String action, bool value) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/update_settings.php'),
+        Uri.parse('$baseUrl/admin/update_settings.php'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'action': action, 'value': value}),
       );
@@ -587,7 +593,7 @@ class ApiService {
 
   static Future<List<dynamic>> getAds() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/get_ads.php'));
+      final response = await http.get(Uri.parse('$baseUrl/ads/get_ads.php'));
       if (response.statusCode == 200) {
         return json.decode(response.body);
       }
@@ -605,7 +611,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/add_ad.php'),
+        Uri.parse('$baseUrl/ads/add_ad.php'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'title': title,
@@ -627,7 +633,7 @@ class ApiService {
   static Future<bool> deleteAd(String id) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/delete_ad.php'),
+        Uri.parse('$baseUrl/ads/delete_ad.php'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id': id}),
       );
@@ -650,7 +656,7 @@ class ApiService {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/update_venue.php'),
+        Uri.parse('$baseUrl/venue/update_venue.php'),
       );
 
       request.fields['id'] = id;
@@ -689,7 +695,7 @@ class ApiService {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/update_field.php'),
+        Uri.parse('$baseUrl/venue/update_field.php'),
       );
 
       request.fields['id'] = id;
@@ -728,7 +734,7 @@ class ApiService {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/add_venue.php'),
+        Uri.parse('$baseUrl/venue/add_venue.php'),
       );
 
       request.fields['name'] = name;

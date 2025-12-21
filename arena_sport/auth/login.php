@@ -1,0 +1,66 @@
+<?php
+error_reporting(0);
+ini_set('display_errors', 0);
+
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *'); 
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+include '../config/koneksi.php';
+
+$json_data = file_get_contents("php://input");
+$data = json_decode($json_data, true);
+
+$identifier = $data['email'] ?? null; 
+$password = $data['password'] ?? null;
+
+if (empty($identifier) || empty($password)) {
+    echo json_encode([
+        'status' => 'error', 
+        'message' => 'Email/No. Telepon dan password harus diisi.'
+    ]);
+    exit();
+}
+
+$sql = "SELECT id, password, name, email, phone, role, photo_profile, status 
+        FROM users 
+        WHERE email = '$identifier' OR phone = '$identifier'";
+
+$result = $conn->query($sql);
+
+if ($result && $result->num_rows > 0) {
+    $user = $result->fetch_assoc();
+    
+    if ($user['status'] === 'banned') {
+        echo json_encode(["status" => "error", "message" => "Akun Anda telah dibanned. Hubungi admin."]);
+        exit();
+    }
+
+    if (password_verify($password, $user['password'])) {
+        echo json_encode([
+            "status" => "success", 
+            "message" => "Login Berhasil!",
+            "data" => [
+                "id" => $user['id'],
+                "name" => $user['name'],
+                "email" => $user['email'], 
+                "phone" => $user['phone'],
+                "role" => $user['role'],
+                "photo_profile" => $user['photo_profile'] ?? null 
+            ]
+        ]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Password salah."]);
+    }
+} else {
+    echo json_encode(["status" => "error", "message" => "Akun tidak ditemukan."]);
+}
+
+$conn->close();
+?>

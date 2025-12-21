@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'screens/main_layout.dart';
-import 'screens/auth_screen.dart';
-import 'services/auth_service.dart';
-import 'screens/admin_main_layout.dart';
-import 'theme_notifier.dart';
+import 'package:kelompok6_sportareamanagement/screens/home/main_layout.dart';
+import 'package:kelompok6_sportareamanagement/screens/auth/auth_screen.dart';
+import 'package:kelompok6_sportareamanagement/services/auth_service.dart';
+import 'package:kelompok6_sportareamanagement/screens/admin/admin_main_layout.dart';
+import 'package:kelompok6_sportareamanagement/theme_notifier.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
