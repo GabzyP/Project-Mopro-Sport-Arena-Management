@@ -1,5 +1,5 @@
 <?php
-include '../koneksi.php';
+include '../config/koneksi.php';
 header('Content-Type: application/json');
 
 $method = $_SERVER['REQUEST_METHOD'];

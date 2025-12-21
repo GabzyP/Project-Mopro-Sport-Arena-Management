@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'api_service.dart';
+import 'package:kelompok6_sportareamanagement/services/api_service.dart';
 
 class AuthService {
   static Future<Map<String, dynamic>> login(
@@ -10,7 +10,7 @@ class AuthService {
   ) async {
     try {
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/login.php'),
+        Uri.parse('${ApiService.baseUrl}/auth/login.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
       );
@@ -38,7 +38,7 @@ class AuthService {
   ) async {
     try {
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/register.php'),
+        Uri.parse('${ApiService.baseUrl}/auth/register.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'name': name,
@@ -92,7 +92,7 @@ class AuthService {
   ) async {
     try {
       final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/reset_password.php'),
+        Uri.parse('${ApiService.baseUrl}/auth/reset_password.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'email': email,
