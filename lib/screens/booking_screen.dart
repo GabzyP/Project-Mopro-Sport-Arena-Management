@@ -121,6 +121,7 @@ class _BookingScreenState extends State<BookingScreen> {
           endTime: booking.endTime,
           bookingId: booking.id,
           bookingCode: booking.bookingCode,
+          totalPrice: booking.totalPrice,
         ),
       ),
     ).then((_) => _loadBookings());
@@ -153,6 +154,8 @@ class _BookingScreenState extends State<BookingScreen> {
         case 'locked':
           return 3;
         case 'unpaid':
+          return 3;
+        case 'pending':
           return 3;
         case 'completed':
           return 2;
@@ -224,14 +227,19 @@ class _BookingScreenState extends State<BookingScreen> {
       bool isPast = bookingEnd != null && bookingEnd.isBefore(now);
       bool isActivePeriod = bookingEnd != null && bookingEnd.isAfter(now);
 
-      if ((b.status == 'locked' || b.status == 'unpaid') && isPast) {
+      if ((b.status == 'locked' ||
+              b.status == 'unpaid' ||
+              b.status == 'pending') &&
+          isPast) {
         continue;
       }
 
       if (selectedFilter == 'all') {
         displayedBookings.add(b);
       } else if (selectedFilter == 'unpaid') {
-        if (b.status == 'locked' || b.status == 'unpaid') {
+        if (b.status == 'locked' ||
+            b.status == 'unpaid' ||
+            b.status == 'pending') {
           displayedBookings.add(b);
         }
       } else if (selectedFilter == 'processing') {
@@ -441,7 +449,7 @@ class _BookingScreenState extends State<BookingScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -508,7 +516,9 @@ class _BookingScreenState extends State<BookingScreen> {
 
     bool isPast = _isPast(booking);
 
-    if (booking.status == 'locked' || booking.status == 'unpaid') {
+    if (booking.status == 'locked' ||
+        booking.status == 'unpaid' ||
+        booking.status == 'pending') {
       statusColor = Colors.orange;
       statusText = "Belum Bayar";
       statusIcon = Icons.timer;
@@ -539,15 +549,15 @@ class _BookingScreenState extends State<BookingScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: isActive
-            ? statusColor.withValues(alpha: 0.05)
+            ? statusColor.withOpacity(0.05)
             : Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: isActive
-            ? Border.all(color: statusColor.withValues(alpha: 0.5), width: 1.5)
+            ? Border.all(color: statusColor.withOpacity(0.5), width: 1.5)
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Colors.grey.withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -568,7 +578,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: brownColor.withValues(alpha: 0.6),
+                        color: brownColor.withOpacity(0.6),
                         letterSpacing: 1.1,
                       ),
                     ),
@@ -578,11 +588,9 @@ class _BookingScreenState extends State<BookingScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.1),
+                        color: statusColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: statusColor.withValues(alpha: 0.3),
-                        ),
+                        border: Border.all(color: statusColor.withOpacity(0.3)),
                       ),
                       child: Row(
                         children: [
@@ -674,7 +682,8 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
 
                 if (booking.status == 'locked' ||
-                    booking.status == 'unpaid') ...[
+                    booking.status == 'unpaid' ||
+                    booking.status == 'pending') ...[
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,

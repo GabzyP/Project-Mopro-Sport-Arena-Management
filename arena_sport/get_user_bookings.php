@@ -17,7 +17,6 @@ if (empty($user_id)) {
 
 date_default_timezone_set('Asia/Jakarta');
 $now = date('Y-m-d H:i:s');
-$conn->query("UPDATE bookings SET status = 'cancelled' WHERE (status = 'locked' OR status = 'unpaid') AND locked_expires_at < '$now'");
 $result = $conn->query($sql);
 
 $bookings = array();

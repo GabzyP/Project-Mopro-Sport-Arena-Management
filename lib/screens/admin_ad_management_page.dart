@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class AdminAdManagementPage extends StatefulWidget {
   const AdminAdManagementPage({super.key});
@@ -9,142 +10,148 @@ class AdminAdManagementPage extends StatefulWidget {
 
 class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
   final Color headerColor = const Color(0xFF3E2723);
-  final Color primaryGreen = const Color(0xFF22c55e);
+  List<dynamic> ads = [];
+  bool isLoading = true;
 
-  List<Map<String, dynamic>> ads = [
-    {
-      'title': 'Promo Akhir Tahun',
-      'desc': 'Diskon 30% untuk semua booking',
-      'is_active': true,
-      'views': 1234,
-      'clicks': 89,
-    },
-    {
-      'title': 'Member Baru',
-      'desc': 'Gratis 1 jam untuk member baru',
-      'is_active': true,
-      'views': 856,
-      'clicks': 45,
-    },
-    {
-      'title': 'Weekend Special',
-      'desc': 'Harga spesial akhir pekan',
-      'is_active': false,
-      'views': 432,
-      'clicks': 12,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchAds();
+  }
 
-  void _deleteAd(int index) {
+  void _fetchAds() async {
+    final result = await ApiService.getAds();
+    if (mounted) {
+      setState(() {
+        ads = result;
+        isLoading = false;
+      });
+    }
+  }
+
+  void _showAddAdDialog() {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+    final valueController = TextEditingController(text: "0");
+    String selectedPromo = 'none';
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Hapus Iklan"),
-        content: Text(
-          "Apakah Anda yakin ingin menghapus '${ads[index]['title']}'?",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Batal"),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                ads.removeAt(index);
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Iklan berhasil dihapus")),
-              );
-            },
-            child: const Text("Hapus", style: TextStyle(color: Colors.red)),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Buat Iklan Baru"),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: "Nama Iklan"),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: descController,
+                    decoration: const InputDecoration(labelText: "Deskripsi"),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedPromo,
+                    decoration: const InputDecoration(labelText: "Promo Iklan"),
+                    items: const [
+                      DropdownMenuItem(value: 'none', child: Text("Tidak Ada")),
+                      DropdownMenuItem(
+                        value: 'discount',
+                        child: Text("Diskon (%)"),
+                      ),
+                      DropdownMenuItem(
+                        value: 'cashback',
+                        child: Text("Cashback (Poin)"),
+                      ),
+                    ],
+                    onChanged: (val) => setState(() => selectedPromo = val!),
+                  ),
+                  if (selectedPromo != 'none')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: TextField(
+                        controller: valueController,
+                        decoration: InputDecoration(
+                          labelText: selectedPromo == 'discount'
+                              ? "Besar Diskon (%)"
+                              : "Jumlah Cashback",
+                          suffixText: selectedPromo == 'discount' ? "%" : "pts",
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Batal"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (titleController.text.isEmpty) return;
+
+                  final success = await ApiService.addAd(
+                    title: titleController.text,
+                    description: descController.text,
+                    promoType: selectedPromo,
+                    promoValue: double.tryParse(valueController.text) ?? 0,
+                  );
+
+                  if (success) {
+                    Navigator.pop(context);
+                    _fetchAds();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Iklan berhasil ditambahkan"),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Gagal menambah iklan")),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF22c55e),
+                ),
+                child: const Text("Simpan"),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  void _showAddAdSheet() {
-    final TextEditingController titleController = TextEditingController();
-    final TextEditingController descController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 20,
-          right: 20,
-          top: 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Buat Iklan Baru",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: "Judul Promo",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              controller: descController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: "Deskripsi",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: primaryGreen),
-                onPressed: () {
-                  if (titleController.text.isNotEmpty &&
-                      descController.text.isNotEmpty) {
-                    setState(() {
-                      ads.insert(0, {
-                        'title': titleController.text,
-                        'desc': descController.text,
-                        'is_active': true,
-                        'views': 0,
-                        'clicks': 0,
-                      });
-                    });
-                    Navigator.pop(context);
-                  }
-                },
-                child: const Text(
-                  "Simpan Iklan",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
+  void _deleteAd(String id) async {
+    final success = await ApiService.deleteAd(id);
+    if (success) {
+      _fetchAds();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Iklan dihapus")));
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddAdDialog,
+        backgroundColor: const Color(0xFF22c55e),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
       body: Column(
         children: [
           Container(
@@ -171,7 +178,7 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Buat & kelola promo",
+                      "Manajemen banner promo",
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.7),
                         fontSize: 14,
@@ -183,42 +190,17 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
             ),
           ),
 
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _showAddAdSheet,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryGreen,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text(
-                  "Buat Iklan Baru",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
           Expanded(
-            child: ads.isEmpty
-                ? const Center(child: Text("Belum ada iklan tersedia"))
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ads.isEmpty
+                ? const Center(child: Text("Belum ada iklan aktif"))
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(16),
                     itemCount: ads.length,
                     itemBuilder: (context, index) {
                       final ad = ads[index];
-                      return _buildAdCard(ad, index);
+                      return _buildAdCard(ad);
                     },
                   ),
           ),
@@ -227,106 +209,118 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
     );
   }
 
-  Widget _buildAdCard(Map<String, dynamic> ad, int index) {
-    bool isActive = ad['is_active'];
+  Widget _buildAdCard(dynamic ad) {
+    String type = ad['promo_type'] ?? 'none';
+
+    Color themeColor;
+    IconData icon;
+    String promoText = "";
+
+    if (type == 'discount') {
+      themeColor = Colors.red;
+      icon = Icons.local_offer;
+      promoText = "Diskon ${ad['promo_value']}%";
+    } else if (type == 'cashback') {
+      themeColor = Colors.orange;
+      icon = Icons.monetization_on;
+      promoText = "Cashback ${ad['promo_value']} pts";
+    } else {
+      themeColor = Colors.blue;
+      icon = Icons.info_outline;
+      promoText = "Info";
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: themeColor, width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    ad['title'],
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () {},
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: themeColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(icon, color: themeColor, size: 24),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isActive ? primaryGreen : Colors.grey.shade700,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      isActive ? "Aktif" : "Nonaktif",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ad['title'] ?? 'No Title',
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: themeColor,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              promoText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    IconButton(
+                      icon: Icon(Icons.delete_outline, color: Colors.red[300]),
+                      onPressed: () => _deleteAd(ad['id'].toString()),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  ad['description'] ?? '',
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                    height: 1.4,
                   ),
-                ],
-              ),
-              Switch(
-                value: isActive,
-                onChanged: (val) {
-                  setState(() => ads[index]['is_active'] = val);
-                },
-                activeColor: Colors.white,
-                activeTrackColor: primaryGreen,
-              ),
-            ],
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            ad['desc'],
-            style: const TextStyle(color: Colors.grey, fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.visibility_outlined,
-                    size: 18,
-                    color: Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    "${ad['views']} views",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                  ),
-                  const SizedBox(width: 20),
-                  Text(
-                    "${ad['clicks']} clicks",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                  ),
-                ],
-              ),
-              IconButton(
-                onPressed: () => _deleteAd(index),
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

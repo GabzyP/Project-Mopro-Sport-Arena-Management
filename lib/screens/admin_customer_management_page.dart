@@ -27,38 +27,20 @@ class _AdminCustomerManagementPageState
     final data = await ApiService.getAdminDashboardData();
     if (mounted) {
       setState(() {
-        customers =
-            data['users'] ??
-            [
-              {
-                'id': '1',
-                'name': 'Ahmad Rizki',
-                'email': 'ahmad@email.com',
-                'booking_count': 24,
-                'is_banned': false,
-              },
-              {
-                'id': '2',
-                'name': 'Budi Santoso',
-                'email': 'budi@email.com',
-                'booking_count': 18,
-                'is_banned': false,
-              },
-              {
-                'id': '3',
-                'name': 'Citra Dewi',
-                'email': 'citra@email.com',
-                'booking_count': 12,
-                'is_banned': true,
-              },
-              {
-                'id': '4',
-                'name': 'Dani Pratama',
-                'email': 'dani@email.com',
-                'booking_count': 8,
-                'is_banned': false,
-              },
-            ];
+        if (data['customers'] != null) {
+          customers = (data['customers'] as List).map((user) {
+            return {
+              'id': user['id'].toString(),
+              'name': user['name'] ?? 'Unknown',
+              'email': user['email'] ?? '-',
+              'booking_count': user['booking_count'] ?? 0,
+              'is_banned': (user['status'] == 'banned'),
+              'phone': user['phone'] ?? '-',
+            };
+          }).toList();
+        } else {
+          customers = [];
+        }
         filteredCustomers = customers;
         isLoading = false;
       });
@@ -76,22 +58,33 @@ class _AdminCustomerManagementPageState
   }
 
   void _toggleBannedStatus(dynamic user) async {
-    debugPrint("Memproses status banned untuk: ${user['name']}");
+    String newStatus = (user['is_banned'] == true) ? 'active' : 'banned';
+    bool success = await ApiService.updateUserStatus(user['id'], newStatus);
 
-    setState(() {
-      user['is_banned'] = !user['is_banned'];
-    });
+    if (success) {
+      if (mounted) {
+        setState(() {
+          user['is_banned'] = !user['is_banned'];
+        });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          user['is_banned']
-              ? "${user['name']} berhasil dibanned"
-              : "Akses ${user['name']} telah dipulihkan",
-        ),
-        backgroundColor: user['is_banned'] ? Colors.red : Colors.green,
-      ),
-    );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              user['is_banned']
+                  ? "${user['name']} berhasil dibanned"
+                  : "Akses ${user['name']} telah dipulihkan",
+            ),
+            backgroundColor: user['is_banned'] ? Colors.red : Colors.green,
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Gagal mengupdate status user")),
+        );
+      }
+    }
   }
 
   @override

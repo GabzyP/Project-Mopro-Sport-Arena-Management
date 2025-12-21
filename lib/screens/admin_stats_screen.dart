@@ -20,7 +20,9 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
     "pending_orders": "0",
   };
 
-  Map<int, double> monthlyRevenue = {};
+  List<double> monthlyRevenueList = List.filled(6, 0.0);
+  List<DateTime> monthLabels = [];
+
   Map<String, int> sportCounts = {};
   Map<int, int> primeTimeCounts = {};
   Map<String, int> fieldPopularity = {};
@@ -43,7 +45,14 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
         stats = data['stats'] ?? stats;
         List<dynamic> orders = data['orders'] ?? [];
 
-        monthlyRevenue = {7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0};
+        monthlyRevenueList = List.filled(6, 0.0);
+        monthLabels.clear();
+        DateTime now = DateTime.now();
+        for (int i = 5; i >= 0; i--) {
+          DateTime m = DateTime(now.year, now.month - i, 1);
+          monthLabels.add(m);
+        }
+
         sportCounts = {"Futsal": 0, "Badminton": 0, "Basket": 0};
         primeTimeCounts = {};
         fieldPopularity = {};
@@ -51,12 +60,16 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
         totalSportsCount = 0;
 
         for (var order in orders) {
-          double price = double.parse(order['total_price'].toString());
-
+          double price =
+              double.tryParse(order['total_price'].toString()) ?? 0.0;
           DateTime date = DateTime.parse(order['booking_date']);
-          if (date.month >= 7) {
-            monthlyRevenue[date.month] =
-                (monthlyRevenue[date.month] ?? 0) + price;
+
+          for (int i = 0; i < 6; i++) {
+            if (monthLabels[i].month == date.month &&
+                monthLabels[i].year == date.year) {
+              monthlyRevenueList[i] += price;
+              break;
+            }
           }
 
           String sport = _normalizeSport(order['sport_type']);
@@ -118,7 +131,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                     ),
                   ),
                   Text(
-                    "Analisis performa venue (Real-Time)",
+                    "Analisis Performa Venue Real Time",
                     style: TextStyle(color: Colors.white70),
                   ),
                 ],
@@ -176,7 +189,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                         BarChartData(
                           alignment: BarChartAlignment.spaceAround,
                           maxY:
-                              (monthlyRevenue.values.fold(
+                              (monthlyRevenueList.fold(
                                 0.0,
                                 (p, c) => p > c ? p : c,
                               )) *
@@ -187,13 +200,19 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                             bottomTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                getTitlesWidget: (val, _) => Text(
-                                  _getMonthName(val.toInt()),
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.grey,
-                                  ),
-                                ),
+                                getTitlesWidget: (val, _) {
+                                  int idx = val.toInt();
+                                  if (idx >= 0 && idx < monthLabels.length) {
+                                    return Text(
+                                      _getMonthName(monthLabels[idx].month),
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox();
+                                },
                               ),
                             ),
                             leftTitles: const AxisTitles(
@@ -208,21 +227,21 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                           ),
                           gridData: const FlGridData(show: false),
                           borderData: FlBorderData(show: false),
-                          barGroups: monthlyRevenue.entries.map((e) {
+                          barGroups: List.generate(6, (index) {
                             return BarChartGroupData(
-                              x: e.key,
+                              x: index,
                               barRods: [
                                 BarChartRodData(
-                                  toY: e.value,
+                                  toY: monthlyRevenueList[index],
                                   color: primaryColor,
-                                  width: 14,
+                                  width: 22,
                                   borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(4),
+                                    top: Radius.circular(6),
                                   ),
                                 ),
                               ],
                             );
-                          }).toList(),
+                          }),
                         ),
                       ),
                     ),
@@ -329,13 +348,26 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
       double total = entry.value['total'];
 
       Color color;
-      if (name.toLowerCase().contains('gopay'))
+      String lowerName = name.toLowerCase();
+      if (lowerName.contains('gopay'))
         color = Colors.green;
-      else if (name.toLowerCase().contains('ovo'))
+      else if (lowerName.contains('ovo'))
         color = Colors.purple;
-      else if (name.toLowerCase().contains('dana'))
+      else if (lowerName.contains('dana'))
         color = Colors.blue;
-      else if (name.toLowerCase().contains('transfer'))
+      else if (lowerName.contains('shopee'))
+        color = Colors.orange;
+      else if (lowerName.contains('bca'))
+        color = Colors.blue[900]!;
+      else if (lowerName.contains('mandiri'))
+        color = Colors.yellow[800]!;
+      else if (lowerName.contains('bri'))
+        color = Colors.blue[700]!;
+      else if (lowerName.contains('bni'))
+        color = Colors.teal;
+      else if (lowerName.contains('linkaja'))
+        color = Colors.red;
+      else if (lowerName.contains('transfer'))
         color = Colors.indigo;
       else
         color = Colors.grey;
@@ -682,14 +714,22 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
   }
 
   String _getMonthName(int index) {
-    const months = {
-      7: 'Jul',
-      8: 'Ags',
-      9: 'Sep',
-      10: 'Okt',
-      11: 'Nov',
-      12: 'Des',
-    };
-    return months[index] ?? '';
+    const months = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Ags',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+    if (index >= 1 && index <= 12) return months[index];
+    return '';
   }
 }

@@ -153,14 +153,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [primaryColor, const Color(0xFF16a34a)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                image: const DecorationImage(
+                  image: NetworkImage(
+                    'https://images.unsplash.com/photo-1522770179533-24471fcdba45?q=80&w=2000&auto=format&fit=crop',
+                  ),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black45,
+                    BlendMode.darken,
+                  ),
                 ),
                 borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
                 ),
                 boxShadow: [
                   BoxShadow(

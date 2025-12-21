@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/venue_model.dart';
 import '../services/api_service.dart';
 import 'add_field_screen.dart';
+import 'edit_venue_dialog.dart';
+import 'edit_field_dialog.dart';
 
 class VenueDetailAdminScreen extends StatefulWidget {
   final Venue venue;
@@ -67,6 +69,21 @@ class _VenueDetailAdminScreenState extends State<VenueDetailAdminScreen> {
         ),
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Edit Informasi Venue',
+            onPressed: () async {
+              final result = await showDialog(
+                context: context,
+                builder: (context) => EditVenueDialog(venue: widget.venue),
+              );
+              if (result == true) {
+                Navigator.pop(context);
+              }
+            },
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,14 +139,15 @@ class _VenueDetailAdminScreenState extends State<VenueDetailAdminScreen> {
                             size: 20,
                             color: Colors.orange,
                           ),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Fungsi Edit Lapangan ${field.name}',
-                                ),
-                              ),
+                          onPressed: () async {
+                            final result = await showDialog(
+                              context: context,
+                              builder: (context) =>
+                                  EditFieldDialog(field: field),
                             );
+                            if (result == true) {
+                              _loadFields();
+                            }
                           },
                         ),
                       );
