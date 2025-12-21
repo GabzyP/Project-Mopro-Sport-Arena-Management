@@ -53,20 +53,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).iconTheme.color,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
           children: [
-            const Text(
+            Text(
               "Notifikasi",
               style: TextStyle(
-                color: Colors.black,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),
@@ -162,7 +165,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isRead ? Colors.white : const Color(0xFFF9FAFB),
+        color: isRead
+            ? Theme.of(context).cardColor
+            : Theme.of(context).highlightColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isRead ? Colors.grey.shade200 : primaryColor.withOpacity(0.3),

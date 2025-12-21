@@ -15,24 +15,35 @@ if (empty($field_id)) {
 }
 
 $conn->query("UPDATE bookings SET status = 'cancelled' 
-              WHERE status = 'locked' 
+              WHERE (status = 'locked' OR status = 'unpaid') 
               AND locked_expires_at < NOW()");
 
 $sql = "SELECT start_time, end_time, status FROM bookings 
         WHERE field_id = '$field_id' 
         AND booking_date = '$date' 
         AND (
-            status IN ('processing', 'confirmed') 
-            OR (status = 'locked' AND locked_expires_at > NOW())
+            status IN ('processing', 'confirmed', 'booked', 'completed') 
+            OR ((status = 'locked' OR status = 'unpaid') AND locked_expires_at > NOW())
         )";
 
 $result = $conn->query($sql);
 
+
+
 $booked_slots = [];
 while($row = $result->fetch_assoc()) {
-    $status = $row['status'];
-    if ($status == 'processing' || $status == 'confirmed' || $status == 'locked') {
-        $status = 'booked';
+    $db_status = $row['status'];
+    
+
+    
+    $final_status = 'available';
+
+    if ($db_status == 'processing' || $db_status == 'locked' || $db_status == 'unpaid') {
+        $final_status = 'locked';
+    } else if ($db_status == 'booked' || $db_status == 'confirmed' || $db_status == 'completed') {
+        $final_status = 'booked';
+    } else {
+        continue;
     }
 
     $start = intval(substr($row['start_time'], 0, 2));
@@ -40,7 +51,13 @@ while($row = $result->fetch_assoc()) {
 
     for ($i = $start; $i < $end; $i++) {
         $time_key = str_pad($i, 2, "0", STR_PAD_LEFT) . ":00";
-        $booked_slots[$time_key] = $status;
+        
+
+        if (isset($booked_slots[$time_key])) {
+            if ($booked_slots[$time_key] == 'booked') continue;
+        }
+        
+        $booked_slots[$time_key] = $final_status;
     }
 }
 

@@ -29,15 +29,10 @@ if (isset($_FILES['image']) && !empty($user_id)) {
         
         if ($conn->query($sql)) {
 
-            $base_url = "http://192.168.1.7/arena_sport"; 
-            $full_url = $base_url . "/" . $db_path;
-
             echo json_encode([
                 "status" => "success", 
                 "message" => "Foto berhasil diupdate",
-                "data" => [
-                    "photo_url" => $full_url 
-                ]
+                "image_url" => $db_path 
             ]);
         } else {
             echo json_encode(["status" => "error", "message" => "Database error: " . $conn->error]);

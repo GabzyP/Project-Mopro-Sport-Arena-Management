@@ -7,7 +7,7 @@ import '../services/api_service.dart';
 import 'auth_screen.dart';
 import 'level_member_screen.dart';
 import 'payment_method_screen.dart';
-import 'notification_screen.dart';
+import 'favorite_screen.dart';
 import 'my_review_screen.dart';
 import 'setting_screen.dart';
 import 'help_screen.dart';
@@ -24,6 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userEmail = "Loading...";
   String? _userId;
   String? _profilePhotoUrl;
+  int _userPoints = 0;
 
   final Color primaryColor = const Color(0xFF22c55e);
 
@@ -35,12 +36,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _userId = prefs.getString('userId');
-      _userName = prefs.getString('userName') ?? "User";
-      _userEmail = prefs.getString('userEmail') ?? "email@tidak.ditemukan";
-      _profilePhotoUrl = prefs.getString('userPhoto');
-    });
+    String? userId = prefs.getString('userId');
+
+    if (userId != null) {
+      final userDetails = await ApiService.getUserDetails(userId);
+
+      setState(() {
+        _userId = prefs.getString('userId');
+        _userName = prefs.getString('userName') ?? "User";
+        _userEmail = prefs.getString('userEmail') ?? "email@tidak.ditemukan";
+        _profilePhotoUrl = prefs.getString('userPhoto');
+        _userPoints = prefs.getInt('userPoints') ?? 0;
+
+        _userName = userDetails['name'] ?? _userName;
+        _userEmail = userDetails['email'] ?? _userEmail;
+        _profilePhotoUrl = userDetails['image_url'] ?? _profilePhotoUrl;
+        _userPoints =
+            int.tryParse((userDetails['points'] ?? '0').toString()) ??
+            _userPoints;
+      });
+
+      await prefs.setString('userName', _userName);
+      await prefs.setString('userEmail', _userEmail);
+      await prefs.setInt('userPoints', _userPoints);
+      if (_profilePhotoUrl != null)
+        await prefs.setString('userPhoto', _profilePhotoUrl!);
+    }
   }
 
   Future<void> _changePhoto() async {
@@ -105,18 +126,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String _getMemberTierName(int points) {
+    if (points >= 1000000) return "Master";
+    if (points >= 100000) return "Diamond";
+    if (points >= 10000) return "Platinum";
+    if (points >= 2000) return "Gold";
+    if (points >= 500) return "Silver";
+    if (points >= 100) return "Bronze";
+    return "Member";
+  }
+
+  Color _getTierColor(String tier) {
+    switch (tier) {
+      case 'Master':
+        return Colors.black;
+      case 'Diamond':
+        return Colors.blue;
+      case 'Platinum':
+        return Colors.teal;
+      case 'Gold':
+        return Colors.amber;
+      case 'Silver':
+        return Colors.grey;
+      case 'Bronze':
+        return Colors.brown;
+      default:
+        return Colors.green;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           Container(
             height: 220,
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: primaryColor,
-              borderRadius: const BorderRadius.only(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage(
+                  'https://images.unsplash.com/photo-1577223625816-7546f13df25d?q=80&w=2070&auto=format&fit=crop',
+                ),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(Colors.black26, BlendMode.darken),
+              ),
+              borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
               ),
@@ -134,34 +190,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Stack(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 3,
+                        GestureDetector(
+                          onTap: _changePhoto,
+                          child: Stack(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 3,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.white,
+                                  backgroundImage: _getProfileImage(),
+                                  child: _profilePhotoUrl == null
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 40,
+                                          color: Colors.grey,
+                                        )
+                                      : null,
                                 ),
                               ),
-                              child: CircleAvatar(
-                                radius: 40,
-                                backgroundColor: Colors.white,
-                                backgroundImage: _getProfileImage(),
-                                child: _profilePhotoUrl == null
-                                    ? const Icon(
-                                        Icons.person,
-                                        size: 40,
-                                        color: Colors.grey,
-                                      )
-                                    : null,
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: _changePhoto,
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
                                 child: Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: const BoxDecoration(
@@ -175,8 +231,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(width: 20),
                         Expanded(
@@ -230,14 +286,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
 
                         _buildMenuTile(
-                          Icons.notifications_outlined,
-                          "Notifikasi",
+                          Icons.favorite_outline,
+                          "Favorit Saya",
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const NotificationScreen(),
+                                builder: (context) => const FavoriteScreen(),
                               ),
                             );
                           },
@@ -311,10 +366,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildMemberBadge() {
+    String tierName = _getMemberTierName(_userPoints);
+    Color tierColor = _getTierColor(tierName);
+
     return InkWell(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const LevelMemberScreen()),
+        MaterialPageRoute(
+          builder: (context) => LevelMemberScreen(currentPoints: _userPoints),
+        ),
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -323,21 +383,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white.withOpacity(0.5)),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.emoji_events, color: Colors.amber, size: 16),
-            SizedBox(width: 6),
+            Icon(
+              Icons.emoji_events,
+              color: tierColor == Colors.black ? Colors.white : tierColor,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
             Text(
-              "Member Gold",
-              style: TextStyle(
+              "Member $tierName",
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
               ),
             ),
-            SizedBox(width: 4),
-            Icon(Icons.arrow_forward_ios, color: Colors.white, size: 10),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 10),
           ],
         ),
       ),
@@ -354,11 +418,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -385,7 +449,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 15,
-            color: isDanger ? Colors.red : Colors.black87,
+            color: isDanger
+                ? Colors.red
+                : Theme.of(context).textTheme.bodyLarge?.color,
           ),
         ),
         trailing: Row(

@@ -35,7 +35,6 @@ class _AdminAdManagementPageState extends State<AdminAdManagementPage> {
     },
   ];
 
-  // FUNGSI UNTUK MENGHAPUS IKLAN
   void _deleteAd(int index) {
     showDialog(
       context: context,

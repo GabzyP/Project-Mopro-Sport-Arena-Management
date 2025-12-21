@@ -3,52 +3,70 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 
 class LevelMemberScreen extends StatefulWidget {
-  const LevelMemberScreen({super.key});
+  final int currentPoints;
+  const LevelMemberScreen({super.key, required this.currentPoints});
 
   @override
   State<LevelMemberScreen> createState() => _LevelMemberScreenState();
 }
 
 class _LevelMemberScreenState extends State<LevelMemberScreen> {
-  int currentPoints = 320;
+  late int currentPoints;
+  List<Map<String, dynamic>> rewardHistory = [];
+  bool isLoading = false;
 
   final List<Map<String, dynamic>> memberTiers = [
     {
       'name': 'Bronze',
       'icon': '🥉',
-      'minPoints': 0,
+      'minPoints': 100,
       'benefits': ['Akses booking standar', 'Notifikasi promo'],
-      'current': false,
     },
     {
       'name': 'Silver',
       'icon': '🥈',
-      'minPoints': 100,
+      'minPoints': 500,
       'benefits': ['Diskon 5%', 'Prioritas booking', 'Akses early bird promo'],
-      'current': false,
     },
     {
       'name': 'Gold',
       'icon': '🥇',
-      'minPoints': 300,
+      'minPoints': 2000,
       'benefits': [
         'Diskon 10%',
         'Free reschedule 2x/bulan',
         'Customer support prioritas',
       ],
-      'current': true,
     },
     {
       'name': 'Platinum',
-      'icon': '💎',
-      'minPoints': 600,
+      'icon': '💠',
+      'minPoints': 10000,
       'benefits': [
         'Diskon 15%',
         'Free cancel 1x/bulan',
         'Exclusive venue access',
-        'Personal assistant',
       ],
-      'current': false,
+    },
+    {
+      'name': 'Diamond',
+      'icon': '💎',
+      'minPoints': 100000,
+      'benefits': [
+        'Diskon 20%',
+        'Personal assistant',
+        'Undangan event eksklusif',
+      ],
+    },
+    {
+      'name': 'Master',
+      'icon': '👑',
+      'minPoints': 1000000,
+      'benefits': [
+        'All Access Pass',
+        'Bebas biaya admin selamanya',
+        'Hadiah ulang tahun spesial',
+      ],
     },
   ];
 
@@ -56,77 +74,63 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
     {
       'id': 1,
       'title': 'Voucher Rp 50.000',
-      'points': 50,
+      'points': 500,
       'icon': Icons.confirmation_number,
       'color': Colors.amber,
     },
     {
       'id': 2,
       'title': 'Free Booking 1 Jam',
-      'points': 100,
+      'points': 1000,
       'icon': Icons.access_time_filled,
       'color': Colors.redAccent,
     },
     {
       'id': 3,
       'title': 'Merchandise Eksklusif',
-      'points': 150,
+      'points': 1500,
       'icon': Icons.checkroom,
       'color': Colors.green,
     },
     {
       'id': 4,
-      'title': 'Upgrade ke Gold',
-      'points': 200,
-      'icon': Icons.emoji_events,
-      'color': Colors.orange,
-    },
-    {
-      'id': 5,
       'title': 'VIP Access 1 Bulan',
-      'points': 300,
+      'points': 5000,
       'icon': Icons.diamond,
       'color': Colors.blue,
     },
-    {
-      'id': 6,
-      'title': 'Free Booking 3 Jam',
-      'points': 250,
-      'icon': Icons.track_changes,
-      'color': Colors.pink,
-    },
   ];
 
-  final List<Map<String, dynamic>> rewardHistory = [
-    {
-      'id': 1,
-      'title': 'Booking Futsal',
-      'points': '+10',
-      'date': '15 Jan 2025',
-      'type': 'earn',
-    },
-    {
-      'id': 2,
-      'title': 'Tukar Voucher 50k',
-      'points': '-50',
-      'date': '10 Jan 2025',
-      'type': 'redeem',
-    },
-    {
-      'id': 3,
-      'title': 'Booking Badminton',
-      'points': '+10',
-      'date': '8 Jan 2025',
-      'type': 'earn',
-    },
-    {
-      'id': 4,
-      'title': 'Bonus Member Gold',
-      'points': '+50',
-      'date': '1 Jan 2025',
-      'type': 'bonus',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    currentPoints = widget.currentPoints;
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    if (userId != null) {
+      final details = await ApiService.getUserDetails(userId);
+      final history = await ApiService.getRewardHistory(userId);
+
+      if (mounted) {
+        setState(() {
+          currentPoints =
+              int.tryParse(details['points'].toString()) ?? currentPoints;
+          rewardHistory = history.map((e) {
+            return {
+              'title': e['reward_title'] ?? 'Hadiah',
+              'points': "-${e['points_cost']}",
+              'date': e['redeemed_at'] ?? '',
+              'type': 'redeem',
+            };
+          }).toList();
+        });
+      }
+    }
+  }
 
   void _redeemPoint(int cost, String title) {
     if (currentPoints >= cost) {
@@ -144,21 +148,34 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF22c55e),
               ),
-              onPressed: () {
-                setState(() {
-                  currentPoints -= cost;
-                  rewardHistory.insert(0, {
-                    'id': DateTime.now().millisecondsSinceEpoch,
-                    'title': "Tukar $title",
-                    'points': "-$cost",
-                    'date': "Hari ini",
-                    'type': 'redeem',
-                  });
-                });
+              onPressed: () async {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Berhasil ditukar!")),
-                );
+                setState(() => isLoading = true);
+
+                final prefs = await SharedPreferences.getInstance();
+                final userId = prefs.getString('userId');
+
+                if (userId != null) {
+                  final result = await ApiService.redeemReward(
+                    userId: userId,
+                    rewardTitle: title,
+                    pointsCost: cost,
+                  );
+
+                  if (mounted) {
+                    setState(() => isLoading = false);
+                    if (result['status'] == 'success') {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Berhasil ditukar!")),
+                      );
+                      _loadData();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(result['message'] ?? "Gagal")),
+                      );
+                    }
+                  }
+                }
               },
               child: const Text("Tukar", style: TextStyle(color: Colors.white)),
             ),
@@ -172,13 +189,31 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
     }
   }
 
+  Map<String, dynamic> _getCurrentTier() {
+    Map<String, dynamic> current = memberTiers.first;
+    for (var tier in memberTiers) {
+      if (currentPoints >= tier['minPoints']) {
+        current = tier;
+      } else {
+        break;
+      }
+    }
+    return current;
+  }
+
+  Map<String, dynamic>? _getNextTier() {
+    Map<String, dynamic> current = _getCurrentTier();
+    int index = memberTiers.indexOf(current);
+    if (index + 1 < memberTiers.length) {
+      return memberTiers[index + 1];
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentTier = memberTiers.firstWhere((t) => t['current'] == true);
-    final currentIndex = memberTiers.indexOf(currentTier);
-    final nextTier = (currentIndex + 1 < memberTiers.length)
-        ? memberTiers[currentIndex + 1]
-        : null;
+    final currentTier = _getCurrentTier();
+    final nextTier = _getNextTier();
 
     double progressValue = 1.0;
     int pointsNeeded = 0;
@@ -186,15 +221,27 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
     if (nextTier != null) {
       int minCurrent = currentTier['minPoints'] as int;
       int minNext = nextTier['minPoints'] as int;
-      if (minNext > minCurrent) {
-        progressValue = (currentPoints - minCurrent) / (minNext - minCurrent);
-        progressValue = progressValue.clamp(0.0, 1.0);
+
+      if (minNext > minCurrent) {}
+
+      int base = currentTier['minPoints'];
+      int target = nextTier['minPoints'];
+
+      if (currentPoints < 100 && currentTier['name'] == 'Newbie') {
+        base = 0;
+        target = 100;
       }
-      pointsNeeded = minNext - currentPoints;
+
+      if (target > base) {
+        progressValue = (currentPoints - base) / (target - base);
+      }
+
+      progressValue = progressValue.clamp(0.0, 1.0);
+      pointsNeeded = target - currentPoints;
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
@@ -222,7 +269,10 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  ...memberTiers.map((tier) => _buildTierItem(tier)),
+                  ...memberTiers.map((tier) {
+                    bool isCurrent = tier['name'] == currentTier['name'];
+                    return _buildTierItem(tier, isCurrent);
+                  }),
                   const SizedBox(height: 24),
 
                   const Text(
@@ -254,7 +304,7 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
                   ),
                   const SizedBox(height: 12),
                   Card(
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -280,11 +330,9 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFF22c55e).withOpacity(0.3),
-          ), // Border hijau tipis
+          border: Border.all(color: const Color(0xFF22c55e).withOpacity(0.3)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.03),
@@ -320,8 +368,8 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
                   ),
                   child: Text(
                     "${item['points']} poin",
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
@@ -486,7 +534,7 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
 
   Widget _buildBenefitsCard(Map<String, dynamic> tier) {
     return Card(
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -522,9 +570,9 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
                     Expanded(
                       child: Text(
                         benefit,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: Colors.black87,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
                         ),
                       ),
                     ),
@@ -538,12 +586,11 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
     );
   }
 
-  Widget _buildTierItem(Map<String, dynamic> tier) {
-    bool isCurrent = tier['current'] == true;
+  Widget _buildTierItem(Map<String, dynamic> tier, bool isCurrent) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: isCurrent
             ? Border.all(color: const Color(0xFF22c55e), width: 1.5)
@@ -580,9 +627,13 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
         ),
         subtitle: Text(
           "${tier['minPoints']} poin minimum",
-          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        trailing: Icon(Icons.chevron_right, color: Colors.blueGrey[400]),
       ),
     );
   }
@@ -610,7 +661,11 @@ class _LevelMemberScreenState extends State<LevelMemberScreen> {
               const SizedBox(height: 4),
               Text(
                 item['date'],
-                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),

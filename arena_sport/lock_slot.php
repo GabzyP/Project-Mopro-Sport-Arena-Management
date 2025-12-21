@@ -1,5 +1,6 @@
 <?php
 include 'koneksi.php';
+date_default_timezone_set('Asia/Jakarta');
 
 $user_id = $_POST['user_id'];
 $field_id = $_POST['field_id'];
@@ -13,7 +14,7 @@ $checkRes = $conn->query($checkSql);
 
 if ($checkRes->num_rows > 0) {
     $row = $checkRes->fetch_assoc();
-    if ($row['status'] == 'confirmed' || $row['status'] == 'booked') {
+    if ($row['status'] == 'confirmed' || $row['status'] == 'booked' || $row['status'] == 'processing' || $row['status'] == 'completed') {
         echo json_encode(["status" => "error", "message" => "Yah, slot ini baru saja diambil orang lain!"]);
         exit;
     }

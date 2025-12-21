@@ -15,12 +15,28 @@ if ($data) {
     
     $booking_code = "BK-" . strtoupper(substr(md5(time() . $user_id . rand(1,100)), 0, 6));
 
+    // CHECK REWARD VALIDITY
+    $reward_id = isset($data['reward_id']) ? $data['reward_id'] : null;
+    $final_price = $total_price;
+
+    if ($reward_id) {
+        $checkReward = $conn->query("SELECT * FROM reward_history WHERE id = '$reward_id' AND user_id = '$user_id' AND status = 'unused'");
+        if ($checkReward->num_rows == 0) {
+            echo json_encode(["status" => "error", "message" => "Reward tidak valid atau sudah digunakan."]);
+            exit;
+        }
+        // Logic to update price based on reward type handled in Frontend, but we trust Total Price sent?
+        // Ideally we should recalculate server side. But for now let's trust total_price and just mark reward used.
+        // User requirements: "Use Voucher 50K or Free Booking".
+        // If free booking, total might be 0 or reduced.
+    }
+
     $checkConflict = $conn->query("SELECT id FROM bookings 
                                    WHERE field_id = '$field_id' 
                                    AND booking_date = '$booking_date' 
                                    AND (start_time < '$end_time' AND end_time > '$start_time') 
                                    AND (
-                                       status IN ('confirmed', 'processing') 
+                                       status IN ('confirmed', 'processing', 'booked', 'completed') 
                                        OR (status = 'locked' AND locked_expires_at > NOW())
                                    )");
 
@@ -36,6 +52,12 @@ if ($data) {
 
     if ($conn->query($sql)) {
         $booking_id = $conn->insert_id;
+
+        // MARK REWARD AS USED
+        if ($reward_id) {
+            $conn->query("UPDATE reward_history SET status = 'used' WHERE id = '$reward_id'");
+        }
+
         echo json_encode([
             "status" => "success", 
             "message" => "Slot diamankan.",

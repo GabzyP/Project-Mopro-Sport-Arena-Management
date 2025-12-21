@@ -32,7 +32,7 @@ class VenueCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -108,7 +108,7 @@ class VenueCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          ' (120)',
+                          ' (${venue.ratingCount})',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 12,
@@ -183,7 +183,7 @@ class VenueCard extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFf3f4f6),
+                            color: Theme.of(context).canvasColor,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -198,7 +198,9 @@ class VenueCard extends StatelessWidget {
                                 sport.trim(),
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.grey[800],
+                                  color: Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium?.color,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
