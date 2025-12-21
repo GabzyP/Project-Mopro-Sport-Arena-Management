@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Untuk fitur Copy Paste
+import 'package:flutter/services.dart';
 
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
@@ -14,31 +14,62 @@ class _HelpScreenState extends State<HelpScreen> {
 
   final List<Map<String, String>> faqs = [
     {
-      "question": "Bagaimana cara membatalkan booking?",
+      "question": "Gimana cara booking lapangan?",
       "answer":
-          "Masuk ke menu 'Riwayat Booking', pilih booking yang ingin dibatalkan, lalu klik tombol 'Batalkan'. Pembatalan maksimal H-1 jadwal main.",
+          "Gampang banget! Pilih venue yang kamu suka di home, cek jadwal yang kosong, pilih jam mainmu, terus bayar deh. Jangan lupa dateng tepat waktu ya!",
     },
     {
-      "question": "Apakah bisa reschedule jadwal?",
+      "question": "Apa itu SportPoint & Member Rank?",
       "answer":
-          "Ya, Anda dapat melakukan reschedule 1 kali untuk setiap booking, maksimal 24 jam sebelum jadwal main.",
+          "Setiap kamu booking, kamu dapet poin (1 poin tiap Rp 1.000). Makin banyak poin, rank kamu makin tinggi (Bronze sampe Master) dan benefitnya makin gokil!",
     },
     {
-      "question": "Bagaimana sistem refund bekerja?",
+      "question": "Bisa batalin booking gak?",
       "answer":
-          "Refund akan diproses dalam 3-5 hari kerja setelah pembatalan disetujui. Dana akan dikembalikan ke metode pembayaran yang sama.",
+          "Bisa dong, tapi maksimal H-1 ya. Masuk ke 'Riwayat Booking', pilih yang mau dibatalin. Kalau mepet jam main, sorry banget gak bisa refund ya sob.",
     },
     {
-      "question": "Apa keuntungan menjadi Member Gold?",
+      "question": "Duit refund masuk ke mana?",
       "answer":
-          "Member Gold mendapatkan diskon 10% setiap booking, prioritas customer support, dan bebas biaya layanan.",
+          "Tenang, duitmu aman. Refund bakal balik ke saldo 'My Wallet' di aplikasi ini atau ke rekening asal kamu dalam 1-3 hari kerja.",
     },
     {
-      "question": "Bagaimana cara upgrade member rank?",
+      "question": "Gimana cara kasih review?",
       "answer":
-          "Kumpulkan poin dengan sering melakukan booking. Setiap 100 poin akan menaikkan level member Anda.",
+          "Kelarin dulu mainnya, nanti di menu 'Riwayat Booking' atau 'Ulasan Saya' bakal muncul tombol buat kasih bintang & curhat soal venue-nya.",
+    },
+    {
+      "question": "Apa guna fitur Favorit?",
+      "answer":
+          "Biar gak repot nyari venue langgananmu! Klik ikon hati di detail venue, nanti bakal muncul di menu 'Favorit Saya' di profil.",
     },
   ];
+
+  List<Map<String, String>> _filteredFaqs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredFaqs = faqs;
+    _searchController.addListener(_filterFaqs);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterFaqs() {
+    String query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredFaqs = faqs.where((faq) {
+        String question = faq['question']!.toLowerCase();
+        String answer = faq['answer']!.toLowerCase();
+        return question.contains(query) || answer.contains(query);
+      }).toList();
+    });
+  }
 
   void _handleContactClick(String type) {
     switch (type) {
@@ -280,16 +311,22 @@ class _HelpScreenState extends State<HelpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          "Bantuan",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+        title: Text(
+          "Pusat Bantuan",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).appBarTheme.foregroundColor,
+          ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).iconTheme.color,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -301,10 +338,10 @@ class _HelpScreenState extends State<HelpScreen> {
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: "Cari bantuan...",
+                hintText: "Mau kepoin apa hari ini?",
                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).cardColor,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -317,8 +354,9 @@ class _HelpScreenState extends State<HelpScreen> {
               ),
             ),
             const SizedBox(height: 24),
+
             const Text(
-              "Hubungi Kami",
+              "Curhat Dong!",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
@@ -328,7 +366,7 @@ class _HelpScreenState extends State<HelpScreen> {
                 _buildContactCard(
                   Icons.chat_bubble_outline,
                   "Live Chat",
-                  "Respon cepat 24/7",
+                  "Fast Response",
                   Colors.green,
                   () => _handleContactClick('Live Chat'),
                 ),
@@ -351,24 +389,28 @@ class _HelpScreenState extends State<HelpScreen> {
               ],
             ),
             const SizedBox(height: 24),
+
             const Text(
-              "Pertanyaan Umum",
+              "Yang Sering Ditanyain (FAQ)",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
               child: Column(
-                children: faqs.map((faq) => _buildFaqItem(faq)).toList(),
+                children: _filteredFaqs
+                    .map((faq) => _buildFaqItem(faq))
+                    .toList(),
               ),
             ),
             const SizedBox(height: 24),
+
             _buildFooterLink(
-              "Syarat & Ketentuan",
+              "Aturan Main (S & K)",
               Icons.description_outlined,
               () => Navigator.push(
                 context,
@@ -377,7 +419,7 @@ class _HelpScreenState extends State<HelpScreen> {
             ),
             const SizedBox(height: 12),
             _buildFooterLink(
-              "Kebijakan Privasi",
+              "Rahasia Kita (Kebijakan Privasi)",
               Icons.privacy_tip_outlined,
               () => Navigator.push(
                 context,
@@ -400,7 +442,7 @@ class _HelpScreenState extends State<HelpScreen> {
   ) {
     return Expanded(
       child: Material(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
@@ -447,7 +489,10 @@ class _HelpScreenState extends State<HelpScreen> {
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
         title: Text(
           faq['question']!,
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
         ),
         children: [
           Padding(
@@ -468,7 +513,7 @@ class _HelpScreenState extends State<HelpScreen> {
 
   Widget _buildFooterLink(String title, IconData icon, VoidCallback onTap) {
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -503,9 +548,10 @@ class _LiveChatScreenState extends State<LiveChatScreen> {
   final TextEditingController _msgController = TextEditingController();
   final List<Map<String, dynamic>> messages = [
     {
-      "text": "Halo! Selamat datang di SportVenue. Ada yang bisa kami bantu?",
+      "text":
+          "Yo what's up! Admin SportVenue di sini. Ada yang bisa dibantu bro?",
       "isUser": false,
-      "time": "00.54",
+      "time": "NOW",
     },
   ];
 
@@ -519,6 +565,18 @@ class _LiveChatScreenState extends State<LiveChatScreen> {
         });
         _msgController.clear();
       });
+
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          setState(() {
+            messages.add({
+              "text": "Sabar ya sob, lagi dicek bentar...",
+              "isUser": false,
+              "time": "${DateTime.now().hour}.${DateTime.now().minute}",
+            });
+          });
+        }
+      });
     }
   }
 
@@ -526,26 +584,13 @@ class _LiveChatScreenState extends State<LiveChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: Color(0xFF22c55e),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              "Live Chat Support",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-          ],
+        title: const Text(
+          "Chat Sama Admin",
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 1,
@@ -618,7 +663,7 @@ class _LiveChatScreenState extends State<LiveChatScreen> {
                   child: TextField(
                     controller: _msgController,
                     decoration: InputDecoration(
-                      hintText: "Ketik pesan...",
+                      hintText: "Tulis di sini...",
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                       ),
@@ -659,27 +704,163 @@ class _LiveChatScreenState extends State<LiveChatScreen> {
 
 class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text("S & K", style: TextStyle(color: Colors.black)),
+  Widget build(BuildContext context) {
+    return Scaffold(
       backgroundColor: Colors.white,
-      iconTheme: const IconThemeData(color: Colors.black),
-    ),
-  );
+      appBar: AppBar(
+        title: const Text("Aturan Main", style: TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: const [
+          Text(
+            "Wajib Baca Biar Gak Salah Paham!",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 20),
+          _TermItem(
+            "1. Sportif Itu Indah",
+            "Dateng sesuai jadwal ya bro. Jangan telat, kasian yang main abis kamu.",
+          ),
+          _TermItem(
+            "2. No Drama Refund",
+            "Kalau mau batal, maksimal H-1. Lewat dari itu, anggep aja sedekah.",
+          ),
+          _TermItem(
+            "3. Jaga Fasilitas",
+            "Rusuh boleh pas main, tapi jangan ngerusak fasilitas venue. Nanti disuruh ganti rugi loh.",
+          ),
+          _TermItem(
+            "4. Pembayaran",
+            "Bayar pake apa aja boleh yang ada di aplikasi. Jangan ngutang ya hehe.",
+          ),
+          _TermItem(
+            "5. Poin & Rank",
+            "Poin yang udah didapet gak bisa dituker uang tunai. Cuma buat pamer rank & dapet diskon.",
+          ),
+          SizedBox(height: 20),
+          Text(
+            "Intinya kita di sini buat have fun & olahraga bareng. Setuju ya? Mantap!",
+            style: TextStyle(
+              fontSize: 14,
+              fontStyle: FontStyle.italic,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TermItem extends StatelessWidget {
+  final String title;
+  final String content;
+  const _TermItem(this.title, this.content);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 4),
+          Text(content, style: TextStyle(color: Colors.grey[700], height: 1.5)),
+        ],
+      ),
+    );
+  }
 }
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text(
-        "Kebijakan Privasi",
-        style: TextStyle(color: Colors.black),
-      ),
+  Widget build(BuildContext context) {
+    return Scaffold(
       backgroundColor: Colors.white,
-      iconTheme: const IconThemeData(color: Colors.black),
-    ),
-  );
+      appBar: AppBar(
+        title: const Text(
+          "Rahasia Kita",
+          style: TextStyle(color: Colors.black),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: const [
+          Text(
+            "Data Lo Aman, Bro!",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 20),
+          _PrivacyItem(
+            "1. Data yang Kita Simpen",
+            "Nama, email, nomor HP, sama foto ganteng/cantik kamu. Cuma itu buat identitas booking.",
+          ),
+          _PrivacyItem(
+            "2. Buat Apa?",
+            "Biar kita tau siapa yang booking, dan buat ngasih info promo kalau ada.",
+          ),
+          _PrivacyItem(
+            "3. Dijual Gak?",
+            "Gila aja! Data lo rahasia negara buat kita. Gak bakal kita jual ke pinjol atau spammer.",
+          ),
+          _PrivacyItem(
+            "4. Lokasi",
+            "Kita butuh lokasi dikit biar tau venue mana yang deket sama kamu. Gak bakal kita track 24 jam kok.",
+          ),
+          _PrivacyItem(
+            "5. Keamanan",
+            "Sistem kita udah dipagerin pake teknologi kekinian. InsyaAllah aman sentosa.",
+          ),
+          SizedBox(height: 20),
+          Text(
+            "Jadi santai aja, main bola/futsal fokus nyetak gol, urusan data biar kita yang jagain.",
+            style: TextStyle(
+              fontSize: 14,
+              fontStyle: FontStyle.italic,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrivacyItem extends StatelessWidget {
+  final String title;
+  final String content;
+  const _PrivacyItem(this.title, this.content);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 4),
+          Text(content, style: TextStyle(color: Colors.grey[700], height: 1.5)),
+        ],
+      ),
+    );
+  }
 }

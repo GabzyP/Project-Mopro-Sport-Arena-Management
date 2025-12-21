@@ -27,12 +27,102 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   final Color primaryColor = const Color(0xFF22c55e);
   final Color bgColor = const Color(0xFFf9fafb);
 
+  int _userPoints = 0;
+  double _discountPercent = 0.0;
+  List<dynamic> myRewards = [];
+  Map<String, dynamic>? selectedReward;
+
   @override
   void initState() {
     super.initState();
     initializeDateFormatting('id_ID', null).then((_) {
+      _loadUserData();
       _loadFields();
+      _checkFavorite();
+      _loadUserData();
+      _loadFields();
+      _checkFavorite();
+      _loadRewards();
     });
+  }
+
+  Future<void> _loadRewards() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    if (userId != null) {
+      final rewards = await ApiService.getMyRewards(userId);
+      if (mounted) {
+        setState(() {
+          myRewards = rewards;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    if (userId != null) {
+      final details = await ApiService.getUserDetails(userId);
+      if (mounted) {
+        setState(() {
+          _userPoints = int.tryParse(details['points'].toString()) ?? 0;
+          _calculateDiscount();
+        });
+      }
+    }
+  }
+
+  void _calculateDiscount() {
+    if (_userPoints >= 1000000) {
+      _discountPercent = 0.20;
+    } else if (_userPoints >= 100000) {
+      _discountPercent = 0.20;
+    } else if (_userPoints >= 10000) {
+      _discountPercent = 0.15;
+    } else if (_userPoints >= 2000) {
+      _discountPercent = 0.10;
+    } else if (_userPoints >= 500) {
+      _discountPercent = 0.05;
+    } else {
+      _discountPercent = 0.0;
+    }
+  }
+
+  Future<void> _checkFavorite() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    if (userId != null) {
+      final status = await ApiService.checkFavorite(userId, widget.venue.id);
+      if (mounted) {
+        setState(() {
+          isLiked = status;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+    if (userId == null) return;
+
+    final result = await ApiService.toggleFavorite(userId, widget.venue.id);
+
+    if (mounted) {
+      if (result['status'] == 'success') {
+        setState(() {
+          isLiked = result['is_favorite'] == true;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result['message'])));
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result['message'])));
+      }
+    }
   }
 
   Future<void> _loadFields() async {
@@ -86,13 +176,24 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   List<String> _generateTimeSlots() {
     int startHour = 8;
     int endHour = 22;
+
     try {
-      if (widget.venue.openTime.contains(':')) {
-        startHour = int.parse(widget.venue.openTime.split(':')[0]);
+      if (widget.venue.openTime.isNotEmpty) {
+        final parts = widget.venue.openTime.split(':');
+        if (parts.isNotEmpty) {
+          startHour = int.parse(parts[0]);
+        }
       }
-      if (widget.venue.closeTime.contains(':')) {
-        endHour = int.parse(widget.venue.closeTime.split(':')[0]);
+
+      if (widget.venue.closeTime.isNotEmpty) {
+        final parts = widget.venue.closeTime.split(':');
+        if (parts.isNotEmpty) {
+          endHour = int.parse(parts[0]);
+        }
       }
+
+      if (endHour == 0) endHour = 24;
+
       if (endHour <= startHour) {
         startHour = 8;
         endHour = 22;
@@ -101,6 +202,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       startHour = 8;
       endHour = 22;
     }
+
     List<String> slots = [];
     for (int i = startHour; i < endHour; i++) {
       slots.add("${i.toString().padLeft(2, '0')}:00");
@@ -116,9 +218,24 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     ).format(number);
   }
 
-  double get totalPrice {
+  double get originalTotalPrice {
     if (selectedField == null) return 0;
     return selectedField!.pricePerHour * userSelectedSlots.length;
+  }
+
+  double get totalPrice {
+    double price = originalTotalPrice * (1 - _discountPercent);
+
+    if (selectedReward != null) {
+      String title = selectedReward!['reward_title'].toString().toLowerCase();
+      if (title.contains('voucher') && title.contains('50.000')) {
+        price -= 50000;
+      } else if (title.contains('free booking') && selectedField != null) {
+        price -= selectedField!.pricePerHour;
+      }
+    }
+
+    return price < 0 ? 0 : price;
   }
 
   void _navigateToPayment() async {
@@ -143,6 +260,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         startTime: startTime,
         endTime: endTime,
         totalPrice: totalPrice,
+        rewardId: selectedReward?['id'].toString(),
       );
 
       setState(() => isSlotLoading = false);
@@ -180,7 +298,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           CustomScrollView(
@@ -197,7 +315,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   _buildCircleButton(
                     icon: isLiked ? Icons.favorite : Icons.favorite_border,
                     color: isLiked ? Colors.red : Colors.black,
-                    onTap: () => setState(() => isLiked = !isLiked),
+                    onTap: _toggleFavorite,
                   ),
                   const SizedBox(width: 8),
                 ],
@@ -307,7 +425,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                               "Tersedia",
                               border: true,
                             ),
-                            _buildLegendItem(Colors.amber.shade100, "Menunggu"),
+                            _buildLegendItem(Colors.amber.shade100, "Diproses"),
                             _buildLegendItem(Colors.red.shade100, "Terpesan"),
                             _buildLegendItem(
                               primaryColor,
@@ -333,6 +451,96 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                 ),
                               )
                             : _buildTimeGrid(),
+                        const SizedBox(height: 20),
+                        if (myRewards.isNotEmpty) ...[
+                          const Text(
+                            "Gunakan Reward",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey[300]!),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                hint: Text(
+                                  "Pilih reward...",
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.color,
+                                  ),
+                                ),
+                                value: selectedReward?['id']?.toString(),
+                                dropdownColor: Theme.of(context).cardColor,
+                                items: myRewards.map<DropdownMenuItem<String>>((
+                                  r,
+                                ) {
+                                  return DropdownMenuItem<String>(
+                                    value: r['id'].toString(),
+                                    child: Text(
+                                      r['reward_title'],
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.bodyLarge?.color,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  setState(() {
+                                    if (val == null) {
+                                      selectedReward = null;
+                                    } else {
+                                      selectedReward = myRewards.firstWhere(
+                                        (r) => r['id'].toString() == val,
+                                      );
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
+                          if (selectedReward != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle,
+                                    size: 16,
+                                    color: Colors.green,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Text(
+                                    "Reward diterapkan",
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  TextButton(
+                                    onPressed: () =>
+                                        setState(() => selectedReward = null),
+                                    child: const Text(
+                                      "Hapus",
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                         const SizedBox(height: 100),
                       ],
                     ],
@@ -348,13 +556,13 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               right: 0,
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black12,
+                      color: Colors.black.withValues(alpha: 0.12),
                       blurRadius: 10,
-                      offset: Offset(0, -5),
+                      offset: const Offset(0, -5),
                     ),
                   ],
                 ),
@@ -366,11 +574,23 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                       children: [
                         Text(
                           "Total (${userSelectedSlots.length} jam)",
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.color,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
+                        if (_discountPercent > 0)
+                          Text(
+                            formatRupiah(originalTotalPrice),
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
                         Text(
                           formatRupiah(totalPrice),
                           style: TextStyle(
@@ -419,8 +639,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   }) {
     return Container(
       margin: const EdgeInsets.all(8),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
         shape: BoxShape.circle,
       ),
       child: IconButton(
@@ -443,7 +663,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
           border: isSelected
               ? Border.all(color: primaryColor, width: 2)
@@ -493,7 +713,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                     ),
                     child: Text(
                       field.sportType,
-                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.blueGrey[700],
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -515,60 +739,69 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   }
 
   Widget _buildDatePicker() {
-    return SizedBox(
-      height: 75,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 14,
-        itemBuilder: (context, index) {
+    return Container(
+      width: double.infinity,
+      height: 80,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(7, (index) {
           final date = DateTime.now().add(Duration(days: index));
           final isSelected =
               date.day == selectedDate.day && date.month == selectedDate.month;
-          return GestureDetector(
-            onTap: () {
-              setState(() => selectedDate = date);
-              _checkSlots();
-            },
-            child: Container(
-              width: 55,
-              margin: const EdgeInsets.only(right: 10),
-              decoration: BoxDecoration(
-                color: isSelected ? primaryColor : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected ? primaryColor : Colors.grey[300]!,
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() => selectedDate = date);
+                _checkSlots();
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? primaryColor
+                      : Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? primaryColor : Colors.grey[300]!,
+                    width: 1,
+                  ),
                 ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    DateFormat('EEE', 'id_ID').format(date),
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey,
-                      fontSize: 11,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      DateFormat('EEE', 'id_ID').format(date),
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.grey,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  Text(
-                    "${date.day}",
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                    const SizedBox(height: 4),
+                    Text(
+                      "${date.day}",
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).textTheme.bodyLarge?.color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  Text(
-                    DateFormat('MMM', 'id_ID').format(date),
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey,
-                      fontSize: 10,
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('MMM', 'id_ID').format(date),
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.grey,
+                        fontSize: 9,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
-        },
+        }),
       ),
     );
   }
@@ -592,7 +825,14 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
           ),
         ),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -632,8 +872,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
           txtColor = Colors.white;
           isClickable = true;
         } else {
-          bgColor = Colors.white;
-          txtColor = Colors.black;
+          bgColor = Theme.of(context).cardColor;
+          txtColor =
+              Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
           isClickable = true;
         }
 

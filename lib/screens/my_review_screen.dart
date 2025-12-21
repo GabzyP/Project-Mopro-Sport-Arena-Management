@@ -27,11 +27,42 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
     final userId = prefs.getString('userId');
 
     if (userId != null) {
-      final data = await ApiService.getUserReviews(userId);
+      final reviewsData = await ApiService.getUserReviews(userId);
+      final bookingsData = await ApiService.getUserBookings(userId);
+
       if (mounted) {
         setState(() {
-          completedReviews = data;
+          completedReviews = reviewsData;
           isLoading = false;
+
+          final completedBookings = bookingsData.where((b) {
+            final status = b['status'];
+            bool isPast = false;
+            try {
+              final dateParts = b['booking_date'].toString().split('-');
+              final timeParts = b['end_time'].toString().split(':');
+              final endDateTime = DateTime(
+                int.parse(dateParts[0]),
+                int.parse(dateParts[1]),
+                int.parse(dateParts[2]),
+                int.parse(timeParts[0]),
+                int.parse(timeParts[1]),
+              );
+              isPast = endDateTime.isBefore(DateTime.now());
+            } catch (_) {}
+
+            return status == 'completed' ||
+                ((status == 'booked' || status == 'confirmed') && isPast);
+          }).toList();
+
+          pendingReviews = completedBookings.where((booking) {
+            bool reviewedById = completedReviews.any(
+              (r) => r['booking_id'].toString() == booking['id'].toString(),
+            );
+            if (reviewedById) return false;
+
+            return true;
+          }).toList();
         });
       }
     } else {
@@ -48,7 +79,78 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
     return total / completedReviews.length;
   }
 
-  void _showWriteReviewDialog(Map<String, dynamic> item) {}
+  void _showWriteReviewDialog(Map<String, dynamic> booking) {
+    int rating = 0;
+    TextEditingController commentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text("Beri Ulasan"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    booking['venue_name'] ?? '',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    booking['field_name'] ?? '',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        onPressed: () => setState(() => rating = index + 1),
+                        icon: Icon(
+                          index < rating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 32,
+                        ),
+                      );
+                    }),
+                  ),
+                  TextField(
+                    controller: commentController,
+                    decoration: const InputDecoration(labelText: "Komentar"),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("Batal"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (rating == 0) return;
+                    Navigator.pop(ctx);
+                    final prefs = await SharedPreferences.getInstance();
+                    await ApiService.addReview(
+                      userId: prefs.getString('userId')!,
+                      venueName: booking['venue_name'],
+                      sportType: booking['field_name'],
+                      rating: rating,
+                      comment: commentController.text,
+                      bookingId: booking['id'].toString(),
+                    );
+                    _loadReviews();
+                  },
+                  child: const Text("Kirim"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _deleteReview(Map<String, dynamic> item) {
     showDialog(
@@ -72,6 +174,50 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
               ).showSnackBar(const SnackBar(content: Text("Ulasan dihapus")));
             },
             child: const Text("Hapus", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingCard(Map<String, dynamic> item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['venue_name'] ?? 'Venue',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  item['field_name'] ?? '-',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+                Text(
+                  item['booking_date'] ?? '',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => _showWriteReviewDialog(item),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              visualDensity: VisualDensity.compact,
+            ),
+            child: const Text("Ulas"),
           ),
         ],
       ),
@@ -123,7 +269,6 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-
                   if (pendingReviews.isNotEmpty) ...[
                     const Text(
                       "Menunggu Ulasan",
@@ -138,7 +283,6 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                         .toList(),
                     const SizedBox(height: 24),
                   ],
-
                   const Text(
                     "Ulasan Terkirim",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -194,10 +338,6 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildPendingCard(Map<String, dynamic> item) {
-    return Container();
   }
 
   Widget _buildReviewCard(dynamic item) {

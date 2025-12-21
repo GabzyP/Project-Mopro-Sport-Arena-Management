@@ -65,16 +65,14 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: "Nama (Cth: Gopay, BCA)",
-                ),
+                decoration: const InputDecoration(labelText: "Nama"),
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 value: selectedType,
                 items: const [
                   DropdownMenuItem(value: 'wallet', child: Text("E-Wallet")),
-                  DropdownMenuItem(value: 'bank', child: Text("Transfer Bank")),
+                  DropdownMenuItem(value: 'bank', child: Text("M-Banking")),
                 ],
                 onChanged: (val) => selectedType = val!,
                 decoration: const InputDecoration(labelText: "Tipe"),
@@ -88,10 +86,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               const SizedBox(height: 10),
               TextField(
                 controller: imageController,
-                decoration: const InputDecoration(
-                  labelText: "URL Icon/Logo",
-                  hintText: "http://...",
-                ),
+                decoration: const InputDecoration(labelText: "URL Icon"),
               ),
             ],
           ),

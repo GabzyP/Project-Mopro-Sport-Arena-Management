@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../widgets/venue_card.dart';
 import 'venue_detail_screen.dart';
 import 'location_picker_screen.dart';
+import 'notification_screen.dart';
 import 'package:geolocator/geolocator.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -90,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 100),
         child: Column(
@@ -98,13 +99,18 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Container(
               padding: const EdgeInsets.fromLTRB(16, 48, 16, 24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [primaryColor, primaryColor.withOpacity(0.8)],
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(
+                    'https://images.unsplash.com/photo-1577223625816-7546f13df25d?q=80&w=2070&auto=format&fit=crop',
+                  ),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black26,
+                    BlendMode.darken,
+                  ),
                 ),
-                borderRadius: const BorderRadius.only(
+                borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(24),
                   bottomRight: Radius.circular(24),
                 ),
@@ -118,18 +124,33 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Selamat datang 👋',
+                            'Selamat Datang di',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withOpacity(0.95),
                               fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              shadows: [
+                                Shadow(
+                                  offset: const Offset(0, 1),
+                                  blurRadius: 2,
+                                  color: Colors.black.withOpacity(0.5),
+                                ),
+                              ],
                             ),
                           ),
                           const Text(
-                            'Sport Arena',
+                            'Shibuya Arena',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 22,
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(0, 2),
+                                  blurRadius: 4,
+                                  color: Colors.black54,
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -138,13 +159,24 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                          ),
                         ),
                         child: IconButton(
                           icon: const Icon(
                             Icons.notifications_outlined,
                             color: Colors.white,
                           ),
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const NotificationScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -152,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 20),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -167,6 +199,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         searchQuery = val;
                         _filterVenues();
                       },
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Cari venue atau lokasi...',
                         hintStyle: TextStyle(color: Colors.grey[400]),
@@ -255,7 +290,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected ? primaryColor : Colors.white,
+                        color: isSelected
+                            ? primaryColor
+                            : Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: isSelected
                             ? [
@@ -267,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ]
                             : [
                                 BoxShadow(
-                                  color: Colors.grey.withOpacity(0.05),
+                                  color: Colors.black.withOpacity(0.05),
                                   blurRadius: 2,
                                 ),
                               ],
@@ -279,7 +316,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             filter['label'],
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black87,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.color,
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),

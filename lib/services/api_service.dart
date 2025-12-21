@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../models/venue_model.dart';
 import '../models/booking_model.dart';
@@ -100,6 +99,7 @@ class ApiService {
     required String endTime,
     required double totalPrice,
     required String paymentMethod,
+    String? rewardId,
   }) async {
     try {
       final response = await http.post(
@@ -113,6 +113,7 @@ class ApiService {
           'end_time': endTime,
           'total_price': totalPrice,
           'payment_method': paymentMethod,
+          if (rewardId != null) 'reward_id': rewardId,
         }),
       );
       return json.decode(response.body);
@@ -343,6 +344,7 @@ class ApiService {
     required String startTime,
     required String endTime,
     required double totalPrice,
+    String? rewardId,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/create_booking.php'),
@@ -353,6 +355,7 @@ class ApiService {
         'start_time': startTime,
         'end_time': endTime,
         'total_price': totalPrice,
+        if (rewardId != null) 'reward_id': rewardId,
       }),
     );
     return json.decode(response.body);
@@ -379,4 +382,175 @@ class ApiService {
     String text,
     String text2,
   ) async {}
+
+  static Future<Map<String, dynamic>> addReview({
+    required String userId,
+    required String venueName,
+    required String sportType,
+    required int rating,
+    required String comment,
+    String? bookingId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/add_review.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'user_id': userId,
+          'venue_name': venueName,
+          'sport_type': sportType,
+          'rating': rating,
+          'comment': comment,
+          if (bookingId != null) 'booking_id': bookingId,
+        }),
+      );
+      return json.decode(response.body);
+    } catch (e) {
+      return {"status": "error", "message": e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> toggleFavorite(
+    String userId,
+    String venueId,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/favorite.php'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {'action': 'toggle', 'user_id': userId, 'venue_id': venueId},
+      );
+      return json.decode(response.body);
+    } catch (e) {
+      return {"status": "error", "message": e.toString()};
+    }
+  }
+
+  static Future<bool> checkFavorite(String userId, String venueId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$baseUrl/favorite.php?action=check&user_id=$userId&venue_id=$venueId',
+        ),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['is_favorite'] == true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<List<Venue>> getUserFavorites(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/favorite.php?action=list&user_id=$userId'),
+      );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        if (jsonResponse['status'] == 'success') {
+          final List data = jsonResponse['data'];
+          return data.map((json) => Venue.fromJson(json)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateProfile({
+    required String userId,
+    String? name,
+    String? email,
+    String? phone,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/update_profile.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_id': userId,
+          if (name != null) 'name': name,
+          if (email != null) 'email': email,
+          if (phone != null) 'phone': phone,
+        }),
+      );
+      return json.decode(response.body);
+    } catch (e) {
+      return {"status": "error", "message": e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> changePassword({
+    required String userId,
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/change_password.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_id': userId,
+          'old_password': oldPassword,
+          'new_password': newPassword,
+        }),
+      );
+      return json.decode(response.body);
+    } catch (e) {
+      return {"status": "error", "message": e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> redeemReward({
+    required String userId,
+    required String rewardTitle,
+    required int pointsCost,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/redeem_reward.php'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {
+          'user_id': userId,
+          'reward_title': rewardTitle,
+          'points_cost': pointsCost.toString(),
+        },
+      );
+      return json.decode(response.body);
+    } catch (e) {
+      return {"status": "error", "message": e.toString()};
+    }
+  }
+
+  static Future<List<dynamic>> getRewardHistory(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_reward_history.php?user_id=$userId'),
+      );
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<List<dynamic>> getMyRewards(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_my_rewards.php?user_id=$userId'),
+      );
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
 }

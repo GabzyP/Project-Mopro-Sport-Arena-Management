@@ -11,12 +11,15 @@ class Venue {
   final double latitude;
   final double longitude;
 
+  final int ratingCount;
+
   Venue({
     required this.id,
     required this.name,
     required this.address,
     required this.imageUrl,
     required this.rating,
+    required this.ratingCount,
     required this.openTime,
     required this.closeTime,
     required this.minPrice,
@@ -36,8 +39,8 @@ class Venue {
     } else {
       parsedSports = ['general'];
     }
-    String safeTime(String? time) {
-      String t = (time ?? '00:00').toString();
+    String safeTime(String? time, String defaultTime) {
+      String t = (time ?? defaultTime).toString();
       return t.length >= 5 ? t.substring(0, 5) : t;
     }
 
@@ -47,8 +50,9 @@ class Venue {
       address: json['address'] ?? 'Lokasi belum tersedia',
       imageUrl: json['image_url'] ?? 'https://via.placeholder.com/300',
       rating: double.tryParse((json['rating'] ?? '0').toString()) ?? 0.0,
-      openTime: safeTime(json['open_time']),
-      closeTime: safeTime(json['close_time']),
+      ratingCount: int.tryParse((json['rating_count'] ?? '0').toString()) ?? 0,
+      openTime: safeTime(json['open_time'], '08:00'),
+      closeTime: safeTime(json['close_time'], '22:00'),
       minPrice: double.tryParse((json['min_price'] ?? '0').toString()) ?? 0.0,
       sportTypes: parsedSports,
       latitude: double.tryParse((json['latitude'] ?? '0').toString()) ?? 0.0,

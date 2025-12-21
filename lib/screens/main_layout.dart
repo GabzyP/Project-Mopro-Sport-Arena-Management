@@ -4,7 +4,7 @@ import 'home_screen.dart';
 import 'booking_screen.dart';
 import 'profile_screen.dart';
 
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+import 'package:kelompok6_sportareamanagement/theme_notifier.dart';
 
 void main() {
   runApp(const MyApp());
@@ -83,7 +83,7 @@ class _MainLayoutState extends State<MainLayout> {
         child: NavigationBar(
           height: 70,
           elevation: 0,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).cardColor,
           selectedIndex: _currentIndex,
           onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
           destinations: const [

@@ -2,7 +2,7 @@
 include 'koneksi.php';
 header("Content-Type: application/json");
 
-$user_id = $_GET['id'];
+$user_id = $_GET['user_id'] ?? $_GET['id'];
 
 $sql = "SELECT * FROM users WHERE id = '$user_id'";
 $result = $conn->query($sql);
