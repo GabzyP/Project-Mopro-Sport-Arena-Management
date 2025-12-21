@@ -171,6 +171,9 @@ project-root/
 | gabzy@gmail.com | 111111 | Customer | 
 | admin@arena.com | 123456 | Admin | 
 
+sedikit catatan : 
+untuk pindah ke login admin atau sebaliknya klik logo 
+
 ---
 
 ## Video Demo
@@ -188,4 +191,3 @@ program ini sudah diperbaiki jauh lebih baik dibanding saat presentasi yang masi
 semoga dengan perbaikan ini penilaian bapak dapat lebih baik 
 🥰💖 Terimakasih pak Rendra
 ```
-
