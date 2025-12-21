@@ -53,18 +53,51 @@ if ($data) {
 
     $conn->begin_transaction();
     try {
+
+        $settingSql = $conn->query("SELECT auto_confirm FROM admin_settings LIMIT 1");
+        $finalStatus = 'processing';
+        $notifTitle = 'Pembayaran Berhasil';
+        $notifMsg = "Pembayaran Rp " . number_format($total_potong) . " berhasil. Menunggu konfirmasi.";
+
+        if ($settingSql->num_rows > 0) {
+            $setting = $settingSql->fetch_assoc();
+            if ($setting['auto_confirm'] == 1) {
+                $finalStatus = 'confirmed';
+                $notifTitle = 'Booking Dikonfirmasi';
+                $notifMsg = "Pembayaran Rp " . number_format($total_potong) . " berhasil. Booking Anda telah otomatis dikonfirmasi. Tunjukkan kode booking saat di lokasi.";
+            }
+        }
+
         $new_saldo = $current_saldo - $total_potong;
         $conn->query("UPDATE payment_methods SET balance = '$new_saldo' WHERE id = '$payment_method_id'");
 
+        if ($finalStatus == 'confirmed') {
+             $standardPoints = floor($total_potong / 1000);
+             $conn->query("UPDATE users SET points = points + $standardPoints WHERE id = '$user_id'");
+             $notifMsg .= " Anda mendapatkan $standardPoints poin dari transaksi ini.";
+
+
+             $adSql = "SELECT * FROM ads WHERE is_active = 1 AND promo_type = 'cashback' AND (start_date IS NULL OR start_date <= CURDATE()) AND (end_date IS NULL OR end_date >= CURDATE()) LIMIT 1";
+             $adResult = $conn->query($adSql);
+             
+             if ($adResult->num_rows > 0) {
+                 $ad = $adResult->fetch_assoc();
+                 $cashbackPoints = intval($ad['promo_value']);
+                 
+                 $conn->query("UPDATE users SET points = points + $cashbackPoints WHERE id = '$user_id'");
+                 
+                 $notifMsg .= " Bonus tambahan $cashbackPoints poin dari promo ${ad['title']}!";
+             }
+        }
+
         $conn->query("UPDATE bookings SET 
-                      status = 'processing', 
+                      status = '$finalStatus', 
                       payment_method = '$payment_method_id', 
                       locked_expires_at = NULL, 
                       updated_at = NOW() 
                       WHERE id = '$booking_id'");
 
-        $msg = "Pembayaran Rp " . number_format($total_potong) . " berhasil. Menunggu konfirmasi.";
-        $conn->query("INSERT INTO notifications (user_id, title, message, category, is_read, created_at) VALUES ('$user_id', 'Pembayaran Berhasil', '$msg', 'booking', '0', NOW())");
+        $conn->query("INSERT INTO notifications (user_id, title, message, category, is_read, created_at) VALUES ('$user_id', '$notifTitle', '$notifMsg', 'booking', '0', NOW())");
 
         $conn->commit();
         echo json_encode(["status" => "success", "message" => "Pembayaran Berhasil!"]);

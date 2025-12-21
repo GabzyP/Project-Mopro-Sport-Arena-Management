@@ -256,9 +256,15 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
               bottom: 20,
             ),
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: primaryColor,
-              borderRadius: const BorderRadius.only(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage(
+                  'https://images.unsplash.com/photo-1522770179533-24471fcdba45?q=80&w=2000&auto=format&fit=crop',
+                ),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(Colors.black45, BlendMode.darken),
+              ),
+              borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(24),
                 bottomRight: Radius.circular(24),
               ),
@@ -309,6 +315,12 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
                   decoration: InputDecoration(
                     hintText: "Cari kode booking atau nama...",
                     prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -352,7 +364,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
                     controller: _tabController,
                     children: [
                       _buildOrderList('all'),
-                      _buildOrderList('pending'),
+                      _buildOrderList('pending_group'),
                       _buildOrderList('processing'),
                       _buildOrderList('booked'),
                     ],
@@ -363,13 +375,32 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
     );
   }
 
+  TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Widget _buildOrderList(String filterStatus) {
-    List<dynamic> filteredOrders = orders;
-    if (filterStatus != 'all') {
-      filteredOrders = orders
-          .where((o) => o['status'] == filterStatus)
-          .toList();
-    }
+    List<dynamic> filteredOrders = orders.where((o) {
+      if (filterStatus == 'pending_group') {
+        return o['status'] == 'pending' ||
+            o['status'] == 'unpaid' ||
+            o['status'] == 'locked';
+      }
+      bool matchesStatus =
+          (filterStatus == 'all') || (o['status'] == filterStatus);
+      if (!matchesStatus) return false;
+
+      if (_searchQuery.isEmpty) return true;
+      String code = (o['booking_code'] ?? "").toString().toLowerCase();
+      String name = (o['customer_name'] ?? "").toString().toLowerCase();
+      return code.contains(_searchQuery.toLowerCase()) ||
+          name.contains(_searchQuery.toLowerCase());
+    }).toList();
 
     if (filteredOrders.isEmpty) {
       return const Center(
@@ -392,7 +423,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
 
         switch (item['status']) {
           case 'pending':
-            statusColor = Colors.redAccent;
+          case 'unpaid':
+          case 'locked':
+            statusColor = Colors.orange;
             statusText = "Belum Bayar";
             statusIcon = Icons.payment;
             break;
@@ -402,19 +435,25 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen>
             statusIcon = Icons.hourglass_top;
             break;
           case 'booked':
+          case 'confirmed':
             statusColor = primaryColor;
             statusText = "Berhasil";
             statusIcon = Icons.check_circle;
             break;
           case 'cancelled':
             statusColor = Colors.red;
-            statusText = "Ditolak";
+            statusText = "Ditolak/Batal";
             statusIcon = Icons.cancel;
             break;
-          default:
+          case 'completed':
             statusColor = Colors.grey;
             statusText = "Selesai";
             statusIcon = Icons.done_all;
+            break;
+          default:
+            statusColor = Colors.grey;
+            statusText = item['status'] ?? "Unknown";
+            statusIcon = Icons.help;
         }
 
         return GestureDetector(

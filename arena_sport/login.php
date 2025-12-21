@@ -28,7 +28,7 @@ if (empty($identifier) || empty($password)) {
     exit();
 }
 
-$sql = "SELECT id, password, name, email, phone, role, photo_profile 
+$sql = "SELECT id, password, name, email, phone, role, photo_profile, status 
         FROM users 
         WHERE email = '$identifier' OR phone = '$identifier'";
 
@@ -37,6 +37,11 @@ $result = $conn->query($sql);
 if ($result && $result->num_rows > 0) {
     $user = $result->fetch_assoc();
     
+    if ($user['status'] === 'banned') {
+        echo json_encode(["status" => "error", "message" => "Akun Anda telah dibanned. Hubungi admin."]);
+        exit();
+    }
+
     if (password_verify($password, $user['password'])) {
         echo json_encode([
             "status" => "success", 

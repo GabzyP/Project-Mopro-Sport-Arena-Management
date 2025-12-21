@@ -12,9 +12,11 @@ class ApiService {
     String query = '',
   }) async {
     try {
-      String url = '$baseUrl/get_venues.php?category=$category&search=$query';
+      final uri = Uri.parse(
+        '$baseUrl/get_venues.php',
+      ).replace(queryParameters: {'category': category, 'search': query});
 
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(uri);
 
       if (response.statusCode == 200) {
         final List data = json.decode(response.body);
@@ -551,6 +553,209 @@ class ApiService {
       return [];
     } catch (e) {
       return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAdminSettings() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/get_settings.php'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  static Future<bool> updateAdminSettings(String action, bool value) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/update_settings.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'action': action, 'value': value}),
+      );
+      if (response.statusCode == 200) {
+        final res = json.decode(response.body);
+        return res['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<List<dynamic>> getAds() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/get_ads.php'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<bool> addAd({
+    required String title,
+    required String description,
+    required String promoType,
+    required double promoValue,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/add_ad.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'title': title,
+          'description': description,
+          'promo_type': promoType,
+          'promo_value': promoValue,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final res = json.decode(response.body);
+        return res['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> deleteAd(String id) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/delete_ad.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'id': id}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> updateVenue({
+    required String id,
+    required String name,
+    required String address,
+    required String openTime,
+    required String closeTime,
+    required String minPrice,
+    required String sportType,
+    File? imageFile,
+  }) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/update_venue.php'),
+      );
+
+      request.fields['id'] = id;
+      request.fields['name'] = name;
+      request.fields['address'] = address;
+      request.fields['open_time'] = openTime;
+      request.fields['close_time'] = closeTime;
+      request.fields['min_price'] = minPrice;
+      request.fields['sport_type'] = sportType;
+
+      if (imageFile != null) {
+        var pic = await http.MultipartFile.fromPath('image', imageFile.path);
+        request.files.add(pic);
+      }
+
+      var response = await request.send();
+      if (response.statusCode == 200) {
+        final respStr = await response.stream.bytesToString();
+        final json = jsonDecode(respStr);
+        return json['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      print("Error updateVenue: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> updateField({
+    required String id,
+    required String name,
+    required String sportType,
+    required String price,
+    File? imageFile,
+  }) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/update_field.php'),
+      );
+
+      request.fields['id'] = id;
+      request.fields['name'] = name;
+      request.fields['sport_type'] = sportType;
+      request.fields['price'] = price;
+
+      if (imageFile != null) {
+        var pic = await http.MultipartFile.fromPath('image', imageFile.path);
+        request.files.add(pic);
+      }
+
+      var response = await request.send();
+      if (response.statusCode == 200) {
+        final respStr = await response.stream.bytesToString();
+        final json = jsonDecode(respStr);
+        return json['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      print("Error updateField: $e");
+      return false;
+    }
+  }
+
+  static Future<bool> addVenue({
+    required String name,
+    required String address,
+    required String openTime,
+    required String closeTime,
+    required String minPrice,
+    required String description,
+    required String sportType,
+    File? imageFile,
+  }) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/add_venue.php'),
+      );
+
+      request.fields['name'] = name;
+      request.fields['address'] = address;
+      request.fields['open_time'] = openTime;
+      request.fields['close_time'] = closeTime;
+      request.fields['min_price'] = minPrice;
+      request.fields['description'] = description;
+      request.fields['sport_type'] = sportType;
+
+      if (imageFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('image', imageFile.path),
+        );
+      }
+
+      var stream = await request.send();
+      var response = await http.Response.fromStream(stream);
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        return result['status'] == 'success';
+      }
+      return false;
+    } catch (e) {
+      print("Error adding venue: $e");
+      return false;
     }
   }
 }

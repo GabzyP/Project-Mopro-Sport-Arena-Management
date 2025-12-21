@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../models/venue_model.dart';
 import '../services/api_service.dart';
 import '../widgets/venue_card.dart';
@@ -27,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedSport = 'all';
   String searchQuery = '';
 
+  Timer? _debounce;
+
   double? selectedLat;
   double? selectedLng;
 
@@ -45,47 +48,62 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadVenues();
   }
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   void _loadVenues() async {
-    final dataVenues = await ApiService.getVenues();
+    setState(() => isLoading = true);
+
+    final dataVenues = await ApiService.getVenues(
+      category: selectedSport,
+      query: searchQuery,
+    );
 
     if (mounted) {
       setState(() {
         venues = dataVenues;
-        filteredVenues = dataVenues;
+        _applyLocalLocationFilter();
         isLoading = false;
       });
     }
   }
 
-  void _filterVenues() {
+  void _applyLocalLocationFilter() {
     setState(() {
-      filteredVenues = venues.where((venue) {
-        final matchSport =
-            selectedSport == 'all' ||
-            venue.sportTypes.any(
-              (s) => s.toLowerCase().contains(selectedSport.toLowerCase()),
-            );
-
-        final matchSearch =
-            venue.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
-            venue.address.toLowerCase().contains(searchQuery.toLowerCase());
-
-        bool matchLocation = true;
-        if (selectedLat != null && selectedLng != null) {
+      if (selectedLat != null && selectedLng != null) {
+        filteredVenues = venues.where((venue) {
           double distanceInMeters = Geolocator.distanceBetween(
             selectedLat!,
             selectedLng!,
             venue.latitude,
             venue.longitude,
           );
-          if (distanceInMeters > 500000) {
-            matchLocation = false;
-          }
-        }
-
-        return matchSport && matchSearch && matchLocation;
-      }).toList();
+          return distanceInMeters <= 50000;
+        }).toList();
+      } else {
+        filteredVenues = venues;
+      }
     });
+  }
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        searchQuery = query;
+      });
+      _loadVenues();
+    });
+  }
+
+  void _onCategoryChanged(String categoryId) {
+    setState(() {
+      selectedSport = categoryId;
+    });
+    _loadVenues();
   }
 
   @override
@@ -195,10 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     child: TextField(
-                      onChanged: (val) {
-                        searchQuery = val;
-                        _filterVenues();
-                      },
+                      onChanged: _onSearchChanged,
                       style: TextStyle(
                         color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
@@ -252,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           selectedLng = double.tryParse(
                             result['lng'].toString(),
                           );
-                          _filterVenues();
+                          _applyLocalLocationFilter();
                         });
                       }
                     },
@@ -277,10 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   bool isSelected = selectedSport == filter['id'];
                   return GestureDetector(
                     onTap: () {
-                      setState(() {
-                        selectedSport = filter['id'];
-                        _filterVenues();
-                      });
+                      _onCategoryChanged(filter['id']);
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),

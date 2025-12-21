@@ -1,12 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_service.dart';
 import 'auth_screen.dart';
-import 'admin_orders_screen.dart';
-import 'venue_list_admin_screen.dart';
 import 'admin_booking_settings_page.dart';
 import 'admin_customer_management_page.dart';
 import 'admin_ad_management_page.dart';
+import 'venue_list_admin_screen.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({super.key});
@@ -16,176 +18,356 @@ class AdminSettingsScreen extends StatefulWidget {
 }
 
 class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
+  String _userName = "Admin Arena";
+  String _userEmail = "admin@arena.com";
+  String? _userId;
+  String? _profilePhotoUrl;
   bool isLoading = true;
-  String totalBookings = "0";
-  String totalCustomers = "0";
-  String activeAds = "2";
 
-  final Color headerColor = const Color(0xFF3E2723);
-  final Color goldColor = const Color(0xFFFFD700);
+  final Color primaryColor = const Color(0xFF22c55e);
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadAdminData();
   }
 
-  void _loadData() async {
-    final data = await ApiService.getAdminDashboardData();
-    if (mounted) {
-      setState(() {
-        final stats = data['stats'] ?? {};
-        final orders = data['orders'] as List? ?? [];
-        totalBookings = orders.length.toString();
-        totalCustomers = stats['active_users']?.toString() ?? "0";
-        isLoading = false;
-      });
+  void _loadAdminData() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userId');
+
+    if (userId != null) {
+      final userDetails = await ApiService.getUserDetails(userId);
+
+      if (mounted) {
+        setState(() {
+          _userId = userId;
+          _userName =
+              userDetails['name'] ?? prefs.getString('userName') ?? "Admin";
+          _userEmail =
+              userDetails['email'] ??
+              prefs.getString('userEmail') ??
+              "admin@arena.com";
+          _profilePhotoUrl =
+              userDetails['image_url'] ?? prefs.getString('userPhoto');
+          isLoading = false;
+        });
+
+        // Update cache
+        await prefs.setString('userName', _userName);
+        await prefs.setString('userEmail', _userEmail);
+        if (_profilePhotoUrl != null) {
+          await prefs.setString('userPhoto', _profilePhotoUrl!);
+        }
+      }
+    }
+  }
+
+  Future<void> _changePhoto() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null && _userId != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Mengupload foto...")));
+
+      final result = await ApiService.updateProfilePhoto(
+        _userId!,
+        File(image.path),
+      );
+
+      if (result['status'] == 'success') {
+        setState(() {
+          _profilePhotoUrl = result['image_url'];
+        });
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userPhoto', result['image_url']);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Foto berhasil diupdate!")),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(result['message'])));
+        }
+      }
     }
   }
 
   void _handleLogout() async {
-    await AuthService.logout();
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const AuthScreen()),
-        (route) => false,
-      );
-    }
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Konfirmasi"),
+        content: const Text("Yakin ingin keluar dari Admin?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
+          TextButton(
+            onPressed: () async {
+              await AuthService.logout();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (c) => const AuthScreen()),
+                  (r) => false,
+                );
+              }
+            },
+            child: const Text("Keluar", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
-  void _navigateTo(Widget target) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => target));
+  void _showEditProfileDialog() {
+    final nameController = TextEditingController(text: _userName);
+    final emailController = TextEditingController(text: _userEmail);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Edit Profil Admin"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: "Nama Lengkap"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: "Email"),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.isEmpty || emailController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Semua kolom harus diisi")),
+                );
+                return;
+              }
+              Navigator.pop(context);
+
+              if (_userId != null) {
+                final result = await ApiService.updateProfile(
+                  userId: _userId!,
+                  name: nameController.text,
+                  email: emailController.text,
+                );
+
+                if (result['status'] == 'success') {
+                  _loadAdminData(); // Reload
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Profil berhasil diupdate")),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Gagal: ${result['message']}")),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+            child: const Text("Simpan"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 60, bottom: 40),
-              decoration: BoxDecoration(
-                color: headerColor,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Color(0xFF22c55e),
-                      child: Text(
-                        "AA",
-                        style: TextStyle(
-                          fontSize: 24,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Admin Arena",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const Text(
-                    "admin@sportarena.com",
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildBadge("Super Admin"),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-              child: Row(
-                children: [
-                  _buildStatCard(totalBookings, "Total Booking"),
-                  const SizedBox(width: 12),
-                  _buildStatCard(totalCustomers, "Customer"),
-                  const SizedBox(width: 12),
-                  _buildStatCard(activeAds, "Iklan Aktif"),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildMenuItem(
-                    Icons.calendar_today,
-                    "Pengaturan Booking",
-                    "Atur auto confirm & notifikasi",
-                    onTap: () => _navigateTo(const AdminBookingSettingsPage()),
-                  ),
-                  _buildMenuItem(
-                    Icons.people_outline,
-                    "Kelola Customer",
-                    "Lihat & banned akun customer",
-                    onTap: () =>
-                        _navigateTo(const AdminCustomerManagementPage()),
-                  ),
-                  _buildMenuItem(
-                    Icons.campaign_outlined,
-                    "Kelola Iklan",
-                    "Buat & kelola promo",
-                    onTap: () => _navigateTo(const AdminAdManagementPage()),
-                  ),
-                  _buildMenuItem(
-                    Icons.storefront,
-                    "Info Venue",
-                    "Informasi venue & operasional",
-                    onTap: () => _navigateTo(const VenueListAdminScreen()),
-                  ),
-
-                  const SizedBox(height: 24),
-                  _buildLogoutButton(),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBadge(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      backgroundColor: Colors.grey[50], // Light background
+      body: Stack(
         children: [
-          const Text("👑", style: TextStyle(fontSize: 14)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
+          // Background Image Header
+          Container(
+            height: 220,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage(
+                  'https://images.unsplash.com/photo-1522770179533-24471fcdba45?q=80&w=2000&auto=format&fit=crop', // Office/Admin minimalist vibe
+                ),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken),
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: _changePhoto,
+                          child: Stack(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 3,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.white,
+                                  backgroundImage: _getProfileImage(),
+                                  child: _profilePhotoUrl == null
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 40,
+                                          color: Colors.grey,
+                                        )
+                                      : null,
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.amber,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      _userName,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.white70,
+                                      size: 20,
+                                    ),
+                                    onPressed: _showEditProfileDialog,
+                                    tooltip: "Edit Profil",
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                _userEmail,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _buildAdminBadge(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 50),
+
+                  // Menu Items
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        _buildMenuTile(
+                          Icons.settings_applications,
+                          "Pengaturan Booking",
+                          "Atur auto-confirm & limitasi",
+                          onTap: () =>
+                              _navigateTo(const AdminBookingSettingsPage()),
+                        ),
+                        _buildMenuTile(
+                          Icons.people_outline,
+                          "Kelola Customer",
+                          "Daftar pengguna & status",
+                          onTap: () =>
+                              _navigateTo(const AdminCustomerManagementPage()),
+                        ),
+                        _buildMenuTile(
+                          Icons.campaign_outlined,
+                          "Kelola Iklan",
+                          "Tambah atau hapus banner promo",
+                          onTap: () =>
+                              _navigateTo(const AdminAdManagementPage()),
+                        ),
+                        _buildMenuTile(
+                          Icons.storefront,
+                          "Informasi Venue",
+                          "Edit nama, lokasi & fasilitas",
+                          onTap: () =>
+                              _navigateTo(const VenueListAdminScreen()),
+                        ),
+
+                        const SizedBox(height: 24),
+                        _buildMenuTile(
+                          Icons.logout,
+                          "Keluar",
+                          "Akhiri sesi admin",
+                          isDanger: true,
+                          onTap: _handleLogout,
+                        ),
+                        const SizedBox(height: 100),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -193,47 +375,41 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 
-  Widget _buildStatCard(String val, String label) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+  void _navigateTo(Widget target) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => target));
+  }
+
+  Widget _buildAdminBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.5)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.security, color: Colors.white, size: 14),
+          SizedBox(width: 6),
+          Text(
+            "Super Admin",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Text(
-              val,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF22c55e),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMenuItem(
+  Widget _buildMenuTile(
     IconData icon,
     String title,
     String subtitle, {
+    bool isDanger = false,
     VoidCallback? onTap,
   }) {
     return Container(
@@ -243,47 +419,53 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: isDanger
+                ? Colors.red.withOpacity(0.1)
+                : primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: Colors.black87, size: 22),
+          child: Icon(
+            icon,
+            color: isDanger ? Colors.red : primaryColor,
+            size: 24,
+          ),
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            color: isDanger ? Colors.red : Colors.black87,
+          ),
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+        trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
         onTap: onTap,
       ),
     );
   }
 
-  Widget _buildLogoutButton() {
-    return TextButton.icon(
-      onPressed: _handleLogout,
-      icon: const Icon(Icons.logout, size: 20),
-      label: const Text(
-        "Keluar",
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-      style: TextButton.styleFrom(
-        foregroundColor: Colors.red,
-        alignment: Alignment.centerLeft,
-      ),
-    );
+  ImageProvider? _getProfileImage() {
+    if (_profilePhotoUrl != null && _profilePhotoUrl!.isNotEmpty) {
+      if (_profilePhotoUrl!.startsWith('http')) {
+        return NetworkImage(_profilePhotoUrl!);
+      }
+      return NetworkImage("${ApiService.baseUrl}/$_profilePhotoUrl");
+    }
+    return null;
   }
 }

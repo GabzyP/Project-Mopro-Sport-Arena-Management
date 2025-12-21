@@ -15,7 +15,6 @@ if ($data) {
     
     $booking_code = "BK-" . strtoupper(substr(md5(time() . $user_id . rand(1,100)), 0, 6));
 
-    // CHECK REWARD VALIDITY
     $reward_id = isset($data['reward_id']) ? $data['reward_id'] : null;
     $final_price = $total_price;
 
@@ -25,11 +24,44 @@ if ($data) {
             echo json_encode(["status" => "error", "message" => "Reward tidak valid atau sudah digunakan."]);
             exit;
         }
-        // Logic to update price based on reward type handled in Frontend, but we trust Total Price sent?
-        // Ideally we should recalculate server side. But for now let's trust total_price and just mark reward used.
-        // User requirements: "Use Voucher 50K or Free Booking".
-        // If free booking, total might be 0 or reduced.
     }
+
+
+    $userSql = $conn->query("SELECT points FROM users WHERE id = '$user_id'");
+    $userPoints = 0;
+    if ($userSql->num_rows > 0) {
+        $uData = $userSql->fetch_assoc();
+        $userPoints = intval($uData['points']);
+    }
+
+    $levelDiscountPercent = 0;
+    if ($userPoints >= 100000) {
+        $levelDiscountPercent = 20;
+    } else if ($userPoints >= 10000) {
+        $levelDiscountPercent = 15;
+    } else if ($userPoints >= 2000) { 
+        $levelDiscountPercent = 10;
+    } else if ($userPoints >= 500) {
+        $levelDiscountPercent = 5;
+    }
+    
+    $levelDiscountAmount = ($total_price * $levelDiscountPercent) / 100;
+
+
+
+    $adSql = "SELECT * FROM ads WHERE is_active = 1 AND promo_type = 'discount' AND (start_date IS NULL OR start_date <= CURDATE()) AND (end_date IS NULL OR end_date >= CURDATE()) ORDER BY promo_value DESC LIMIT 1";
+    $adResult = $conn->query($adSql);
+    $adDiscountAmount = 0;
+    
+    if ($adResult->num_rows > 0) {
+        $ad = $adResult->fetch_assoc();
+        $discountPercent = floatval($ad['promo_value']);
+        $adDiscountAmount = ($total_price * $discountPercent) / 100;
+    }
+
+    $finalDiscount = max($levelDiscountAmount, $adDiscountAmount);
+    $total_price -= $finalDiscount;
+
 
     $checkConflict = $conn->query("SELECT id FROM bookings 
                                    WHERE field_id = '$field_id' 
@@ -53,16 +85,20 @@ if ($data) {
     if ($conn->query($sql)) {
         $booking_id = $conn->insert_id;
 
-        // MARK REWARD AS USED
         if ($reward_id) {
             $conn->query("UPDATE reward_history SET status = 'used' WHERE id = '$reward_id'");
         }
+
+        $notifTitle = "Segera Selesaikan Pembayaran";
+        $notifMsg = "Booking $booking_code berhasil dibuat. Segera lakukan pembayaran sebelum 10 menit atau booking akan hangus.";
+        $conn->query("INSERT INTO notifications (user_id, title, message, category, is_read, created_at) VALUES ('$user_id', '$notifTitle', '$notifMsg', 'booking', '0', NOW())");
 
         echo json_encode([
             "status" => "success", 
             "message" => "Slot diamankan.",
             "booking_id" => $booking_id,
-            "booking_code" => $booking_code
+            "booking_code" => $booking_code,
+            "total_price" => $total_price
         ]);
     } else {
         echo json_encode(["status" => "error", "message" => "Gagal: " . $conn->error]);

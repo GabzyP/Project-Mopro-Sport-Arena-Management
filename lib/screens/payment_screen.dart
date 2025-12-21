@@ -12,6 +12,7 @@ class PaymentScreen extends StatefulWidget {
   final String endTime;
   final String bookingId;
   final String bookingCode;
+  final double totalPrice;
 
   const PaymentScreen({
     Key? key,
@@ -21,6 +22,7 @@ class PaymentScreen extends StatefulWidget {
     required this.endTime,
     required this.bookingId,
     required this.bookingCode,
+    required this.totalPrice,
   }) : super(key: key);
 
   @override
@@ -99,7 +101,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _updateTotal() {
-    double fieldPrice = widget.field.pricePerHour * durationInHours;
+    double fieldPrice = widget.totalPrice;
 
     if (selectedMethod != null) {
       String type = (selectedMethod!['type'] ?? '').toString().toLowerCase();
@@ -479,7 +481,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildCostCard() {
-    double itemPrice = widget.field.pricePerHour * durationInHours;
+    double originalPrice = widget.field.pricePerHour * durationInHours;
+    double finalPrice = widget.totalPrice;
+    double discount = originalPrice - finalPrice;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -488,7 +493,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
       child: Column(
         children: [
-          _rowInfo("Harga Sewa", currencyFormat.format(itemPrice)),
+          _rowInfo("Harga Sewa Normal", currencyFormat.format(originalPrice)),
+          if (discount > 0) ...[
+            const SizedBox(height: 8),
+            _rowInfo(
+              "Diskon",
+              "- ${currencyFormat.format(discount)}",
+              color: Colors.red,
+            ),
+          ],
           const SizedBox(height: 12),
           _rowInfo(
             "Biaya Layanan",
@@ -539,7 +552,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Widget _rowInfo(String label, String value, {bool isHighlighted = false}) {
+  Widget _rowInfo(
+    String label,
+    String value, {
+    bool isHighlighted = false,
+    Color? color,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -548,7 +566,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           value,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: isHighlighted ? Colors.orange : Colors.black87,
+            color: color ?? (isHighlighted ? Colors.orange : Colors.black87),
           ),
         ),
       ],

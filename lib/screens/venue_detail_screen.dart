@@ -268,6 +268,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       if (result['status'] == 'success') {
         String bookingId = result['booking_id'].toString();
         String bookingCode = result['booking_code'].toString();
+        double finalPrice =
+            double.tryParse(result['total_price'].toString()) ?? totalPrice;
 
         Navigator.push(
           context,
@@ -279,6 +281,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               endTime: endTime,
               bookingId: bookingId,
               bookingCode: bookingCode,
+              totalPrice: finalPrice,
             ),
           ),
         );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/venue_model.dart';
 import '../services/api_service.dart';
 import 'venue_detail_admin_screen.dart';
+import 'add_venue_screen.dart';
 
 class VenueListAdminScreen extends StatefulWidget {
   const VenueListAdminScreen({super.key});
@@ -45,11 +46,14 @@ class _VenueListAdminScreenState extends State<VenueListAdminScreen> {
           IconButton(
             icon: const Icon(Icons.add_business),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Fungsi Tambah Venue Belum diimplementasikan'),
-                ),
-              );
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AddVenueScreen()),
+              ).then((result) {
+                if (result == true) {
+                  _loadVenues();
+                }
+              });
             },
           ),
         ],
